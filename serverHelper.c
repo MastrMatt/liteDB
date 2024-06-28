@@ -1,0 +1,50 @@
+#include "server.h"
+
+void check_error(int value) {
+    if (value < 0) {
+        perror("error");
+        exit(1);
+    }
+}
+
+/*
+helper function to handle reading from a tcp socket, since tcp sockets can have partial reads
+*/
+
+int read_tcp_socket(int fd, char * buffer, int size) {
+    
+    while (size  > 0) {
+        int n = read(fd, buffer, size);
+
+        if (n <= 0) {
+            // error or unexpected EOF
+            return -1;
+        }
+
+        size -= n;
+        buffer += n;
+    }
+
+    return 0;   
+}
+
+
+/*
+helper function to handle writing to a tcp socket, since tcp sockets can have partial writes
+*/
+int write_tcp_socket(int fd, char * buffer, int size) {
+    
+    while (size  > 0) {
+        int n = write(fd, buffer, size);
+
+        if (n <= 0) {
+            // error or unexpected EOF
+            return -1;
+        }
+
+        size -= n;
+        buffer += n;
+    }
+
+    return 0;   
+}
