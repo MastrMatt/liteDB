@@ -99,19 +99,51 @@ int main (int argc, char * argv []) {
     check_error(listen(server_socket, SOMAXCONN));
 
     // a map of all client connections, keyed by fd(Use array to avoid hash table for simplicity)
-    struct Conn *fd2conn[MAX_FDS] = {0};
+    Conn * fd2conn[MAX_FDS] = {0};
 
     // set the server socket to non-blocking
     set_fd_nonblocking(server_socket);
-
 
     // set up the poll arguments
     struct pollfd poll_args[MAX_FDS];
     
     // the event loop, note: there is only on server socket responsible for interating with other client fd's
     while (1) {
+        // prepare the arguments of the poll(), the first argument is the server socket, the events specifies that we are interested in reading from the server socket, 
+        poll_args[0].fd = server_socket;
+        poll_args[0].events = POLLIN;
+        poll_args[0].revents = 0;
 
-        printf("Waiting for a client to connect\n");
+        // handle the client connections
+        for (int i = 0; i < MAX_FDS; i++) {
+            if (!fd2conn[i]) {
+                continue;
+            }
+
+            int c = i + 1;
+            if (c >= MAX_FDS) {
+                return;
+            }
+
+            // set the poll arguments for the client fd
+            poll_args[i].fd = fd2conn[i]->fd;
+
+            // set the events to read from the client fd
+            poll_args[i].events = fd2conn[i]->state == STATE_REQ ? POLLIN : POLLOUT;
+
+            // make sure thhe OS listens to errors on the client fd
+            poll_args[i].events |= POLLERR;
+        }
+
+
+
+
+
+
+
+
+
+        printf("Waiting for clients to connect\n");
 
         struct sockaddr_in client_address;
         socklen_t client_address_len = sizeof(client_address);
