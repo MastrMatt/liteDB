@@ -2,7 +2,7 @@
 
 
 int send_request(int confd, char * message) {
-    char buffer[4 + MAX_MESSAGE_SIZE];
+    char buffer[4 + MAX_MESSAGE_SIZE + 1];
 
     // write the message size
     int message_size = strlen(message);

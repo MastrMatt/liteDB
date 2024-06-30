@@ -48,3 +48,29 @@ int write_tcp_socket(int fd, char * buffer, int size) {
 
     return 0;   
 }
+
+
+void set_fd_nonblocking(int fd) {
+    // get the current flags for the fd from the OS
+    errno = 0;
+    int flags = fcntl(fd, F_GETFL, 0);
+
+    if (errno) {
+        perror("fcntl failed");
+        exit(1);
+    }
+
+    // set the nonblocking flag
+    flags |= O_NONBLOCK;
+
+    // set the new flags for the fd
+    errno = 0;
+    int ret = fcntl(fd, F_SETFL, flags);
+
+    if (errno) {
+        perror("fcntl failed");
+        exit(1);
+    }
+
+    return;
+}

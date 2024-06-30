@@ -28,7 +28,7 @@ int process_single_request(int confd) {
     }
 
     // read the message
-    err = read_tcp_socket(confd, buffer, message_size);
+    err = read_tcp_socket(confd, buffer+4, message_size);
     if (err) {
         if (err < 0) {
             perror("read failed");
@@ -39,7 +39,8 @@ int process_single_request(int confd) {
     }
 
     printf("Message size: %d\n", message_size);
-    
+    printf("Buffer: %s", buffer);
+
     // add the null terminator
     buffer[4 + message_size] = '\0';
 
@@ -97,8 +98,17 @@ int main (int argc, char * argv []) {
     // listen for incoming connections, allow maximum number of connections allowed by the OS
     check_error(listen(server_socket, SOMAXCONN));
 
+    // a map of all client connections, keyed by fd(Use array to avoid hash table for simplicity)
+    struct Conn *fd2conn[MAX_FDS] = {0};
 
-    // process client request
+    // set the server socket to non-blocking
+    set_fd_nonblocking(server_socket);
+
+
+    // set up the poll arguments
+    struct pollfd poll_args[MAX_FDS];
+    
+    // the event loop, note: there is only on server socket responsible for interating with other client fd's
     while (1) {
 
         printf("Waiting for a client to connect\n");
