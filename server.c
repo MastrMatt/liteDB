@@ -98,6 +98,8 @@ int main (int argc, char * argv []) {
     // listen for incoming connections, allow maximum number of connections allowed by the OS
     check_error(listen(server_socket, SOMAXCONN));
 
+    // ! Return here after making hash table
+
     // a map of all client connections, keyed by fd(Use array to avoid hash table for simplicity)
     Conn * fd2conn[MAX_FDS] = {0};
 
