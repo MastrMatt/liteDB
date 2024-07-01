@@ -73,6 +73,122 @@ int process_single_request(int confd) {
     return 0;
 }
 
+// accepts new connection and adds it to the fd2conn array
+int accept_new_connection(Conn * fd2conn[], int server_socket) {
+    // accept the new connection
+    struct sockaddr_in client_address;
+    socklen_t client_address_len = sizeof(client_address);
+
+    int confd = accept(server_socket, (struct sockaddr *) &client_address, &client_address_len);
+    if (confd < 0) {
+        perror("accept failed");
+        return -1;
+    }
+
+    // set the new connection to non-blocking
+    set_fd_nonblocking(confd);
+
+    // find an empty slot in the fd2conn array
+    int i;
+    for (i = 0; i < MAX_CLIENTS; i++) {
+        if (!fd2conn[i]) {
+            break;
+        }
+    }
+
+    if (i == MAX_CLIENTS) {
+        fprintf(stderr, "Too many clients\n");
+        close(confd);
+        return -1;
+    }
+
+    // create a new connection object
+    Conn * conn = (Conn *) calloc(1, sizeof(Conn));
+    conn->fd = confd;
+    conn->state = STATE_REQ;
+
+    // add the connection to the fd2conn array
+    fd2conn[i] = conn;
+
+    return 0;
+}
+
+bool try_fill_read_buffer(Conn * conn) {
+    // check if the read buffer overflowed
+    if (conn->current_read_size > sizeof(conn->read_buffer)) {
+        fprintf(stderr, "Read buffer overflow\n");
+        return false;
+    }
+
+    // read from the socket
+    int read_size = 0;
+
+    // attempt to read from the socket until we have read some characters or a signal has not interrupted the read
+    do {
+        int max_possible_read = sizeof(conn->read_buffer) - conn->current_read_size;
+
+        read_size = read(conn->fd, conn->read_buffer + conn->current_read_size, max_possible_read);
+    } while (read_size < 0 && errno == EINTR);
+
+    if ((read_size < 0) && (errno = EAGAIN)) {
+        //  read buffer is full, wait for the next poll event
+        return false;
+    }
+
+    if (read_size < 0) {
+        // error
+        perror("read failed");
+        return false;
+    }
+
+    if (read_size == 0) {
+        if (conn->current_read_size > 0) {
+            fprintf(stderr, "EOF reached before reading full message\n");
+        } else {
+            // EOF reached
+            pritnf("EOF reached\n");
+        }
+
+        conn->state = STATE_DONE;
+        return false;
+    }
+
+    conn -> current_read_size += read_size;
+    if (conn->current_read_size > sizeof(conn->read_buffer)) {
+        fprintf(stderr, "Read buffer overflow\n");
+        return false;
+    }
+
+    // the loop here is to handle that clients can send multiple requests in one go
+    while (try_process_single_request(conn)) {
+
+    };
+
+    return (conn->state == STATE_REQ);
+}
+
+
+
+void state_req(Conn * conn) {
+    while(try_fill_read_buffer(conn)) {
+
+    };
+}
+
+
+
+void connection_io(Conn * conn) {
+    if (conn -> state == STATE_REQ) {
+        state_req(conn);
+    } else if (conn -> state == STATE_RESP) {
+        state_resp(conn);
+    } else {
+        // Should not be in the done state here
+        fpritnf(stderr, "Invalid state\n");
+        exit(1);
+    }
+}
+
 
 // build a TCP server that listens on port 
 int main (int argc, char * argv []) {
@@ -98,16 +214,14 @@ int main (int argc, char * argv []) {
     // listen for incoming connections, allow maximum number of connections allowed by the OS
     check_error(listen(server_socket, SOMAXCONN));
 
-    // ! Return here after making hash table
-
     // a map of all client connections, keyed by fd(Use array to avoid hash table for simplicity)
-    Conn * fd2conn[MAX_FDS] = {0};
+    Conn * fd2conn[MAX_CLIENTS] = {0};
 
     // set the server socket to non-blocking
     set_fd_nonblocking(server_socket);
 
     // set up the poll arguments
-    struct pollfd poll_args[MAX_FDS];
+    struct pollfd poll_args[MAX_CLIENTS + 1];
     
     // the event loop, note: there is only on server socket responsible for interating with other client fd's
     while (1) {
@@ -117,52 +231,58 @@ int main (int argc, char * argv []) {
         poll_args[0].revents = 0;
 
         // handle the client connections
-        for (int i = 0; i < MAX_FDS; i++) {
+        for (int i = 0; i < MAX_CLIENTS; i++) {
             if (!fd2conn[i]) {
                 continue;
             }
 
-            int c = i + 1;
-            if (c >= MAX_FDS) {
-                return;
-            }
-
             // set the poll arguments for the client fd
-            poll_args[i].fd = fd2conn[i]->fd;
+            poll_args[i+1].fd = fd2conn[i]->fd;
 
             // set the events to read from the client fd
-            poll_args[i].events = fd2conn[i]->state == STATE_REQ ? POLLIN : POLLOUT;
+            poll_args[i+1].events = fd2conn[i]->state == STATE_REQ ? POLLIN : POLLOUT;
+
+            poll_args[i+1].revents = 0;
 
             // make sure thhe OS listens to errors on the client fd
             poll_args[i].events |= POLLERR;
         }
 
+        // call poll() to wait for events
+        int ret = poll(poll_args, MAX_CLIENTS + 1, 1000);
 
+        if (ret < 0) {
+            perror("poll failed");
+            exit(1);
+        }
 
+        // process ready client connections
+        for (int i = 1; i < MAX_CLIENTS + 1; i++) {
+            if (poll_args[i].revents == 0) {
+                // no events on this fd, not interested
+                continue;
+            }
 
+            Conn * conn = fd2conn[i-1];
+            connection_io(conn);
 
-
-
-
-
-        printf("Waiting for clients to connect\n");
-
-        struct sockaddr_in client_address;
-        socklen_t client_address_len = sizeof(client_address);
-
-        int confd = accept(server_socket, (struct sockaddr *) &client_address, &client_address_len);
-        check_error(confd);
-
-        while (1) {
-            int err = process_single_request(confd);
-            if (err <  0) {
-                break;
+            if (conn->state == STATE_DONE) {
+                // close the connection
+                close(conn->fd);
+                free(conn);
+                fd2conn[i-1] = NULL;
             }
         }
 
-        close(confd);
+        // try to accept new connections if server socket is ready
+        if (poll_args[0].revents) {
+           accept_new_connection(fd2conn, server_socket);
+        }
+
     }
 
-    close(server_socket);
+    return 0;
+
 }
+
 

@@ -11,15 +11,17 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <poll.h>
+#include <stdbool.h>
 
 
 #define SERVERPORT 9003
 #define MAX_MESSAGE_SIZE 4096
-#define MAX_FDS 2048
+#define MAX_CLIENTS 2047
 
 void check_error(int value);
 int read_tcp_socket(int fd, char * buffer, int size);
 int write_tcp_socket(int fd, char * buffer, int size);
+void set_nonblocking(int fd);
 
 
 // variables/structs for the event loop
@@ -35,13 +37,12 @@ typedef struct {
 
     // read buffer
     char read_buffer[4 + MAX_MESSAGE_SIZE + 1];
-    int read_size;
-    int read_received;
+    int current_read_size;
 
     // write buffer
     char write_buffer[4 + MAX_MESSAGE_SIZE + 1];
-    int write_size;
-    int write_sent;
+    int need_write_size;
+    int current_write_size;
 } Conn ;
 
 #endif

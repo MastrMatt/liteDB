@@ -5,6 +5,8 @@
         "array": "c",
         "string_view": "c",
         "initializer_list": "c",
-        "utility": "c"
+        "utility": "c",
+        "in.h": "c",
+        "stdlib.h": "c"
     }
 }

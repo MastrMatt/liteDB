@@ -1,3 +1,6 @@
+# vscode environment
+.vscode/
+
 #server and client
 server
 client

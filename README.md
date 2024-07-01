@@ -1,6 +1,6 @@
 # LiteDB
 
--This is an in memory database that is run on a server, it can be used as a cache and even a complete database after persistence has been implemented.The inspiration for this project was redis
+-This is an in memory database that is run on a server, it can be used as a cache and even a complete database after persistence has been implemented. The inspiration for this project was redis, attempting to build from scratch, even data structure like AVL trees and hash tables
 
 -Server is ran on a little endian machine
 
