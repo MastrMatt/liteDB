@@ -27,6 +27,6 @@ HashTable * hcreate(int size);
 void hinsert(HashTable * table, HashNode * node);
 HashNode * hget(HashTable * table, char * key);
 void hremove(HashTable * table, char * key);
-HashTable * resize(HashTable * table);
+HashTable * hresize(HashTable * table);
 void hprint(HashTable * table);
 
