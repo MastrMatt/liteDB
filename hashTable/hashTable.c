@@ -26,6 +26,12 @@ HashTable * hcreate(int size) {
         fprintf(stderr, "Memory allocation failed\n");
         return NULL;
     }
+
+    table->nodes = calloc(sizeof(HashNode *), size);
+    if (table->nodes == NULL) {
+        fprintf(stderr, "Memory allocation failed\n");
+        return NULL;
+    }
     
     table->size = 0;
     table->mask = size - 1;
@@ -88,20 +94,29 @@ void hremove(HashTable * table, char * key) {
 
     // search for the node in the linked list
     HashNode * traverseList = table->nodes[index];
+    HashNode * prev = NULL;
 
     while (traverseList != NULL) {
         if (traverseList->hashCode == hashCode && strcmp(traverseList->key, key) == 0) {
-            // remove the node from the linked list
-            HashNode * deleteNode = traverseList;
-            traverseList = traverseList->next;
+            // first node in the linked list
+            if (prev == NULL) {
+                table->nodes[index] = traverseList->next;
+            } else {
+                prev->next = traverseList->next;
+            }
 
-            free(deleteNode->key);
-            free(deleteNode->value);
-            free(deleteNode);
+            free(traverseList->key);
+            free(traverseList->value);
+            free(traverseList);
 
             table->size--;
+        
+
             return;
         }
+
+        prev = traverseList;
+        traverseList = traverseList->next;
     }
 
     fprintf(stderr, "Key not found to delete\n");
@@ -134,8 +149,12 @@ HashTable * hresize(HashTable * table) {
         }
     }
 
-    return table;
- 
+    // free the old table
+    free(table->nodes);
+    free(table);
+
+    return newTable;
+
 }
 
 //Print the hashtable
@@ -143,9 +162,16 @@ void hprint(HashTable * table) {
     for (int i = 0; i <= table->mask; i++) {
         HashNode * traverseList = table->nodes[i];
 
+        printf("--------------------\n");
+        printf("Index: %d\n", i);
+
         while (traverseList != NULL) {
             printf("Key: %s, Value: %s\n", traverseList->key, traverseList->value);
             traverseList = traverseList->next;
         }
+
+        printf("--------------------\n");
+
     }
 }
+
