@@ -13,16 +13,15 @@
 #include <poll.h>
 #include <stdbool.h>
 
+// include the hashTable
+# include "hashTable/hashTable.h"
 
-#define SERVERPORT 9003
+#define SERVERPORT 9000
 #define MAX_MESSAGE_SIZE 4096
 #define MAX_CLIENTS 2047
 
-void check_error(int value);
-int read_tcp_socket(int fd, char * buffer, int size);
-int write_tcp_socket(int fd, char * buffer, int size);
-void set_nonblocking(int fd);
-
+// Protocol information
+#define MAX_ARGS 10
 
 // variables/structs for the event loop
 enum Conn_State{
@@ -44,5 +43,35 @@ typedef struct {
     int need_write_size;
     int current_write_size;
 } Conn ;
+
+
+typedef struct {
+    char * name;
+    char * args[MAX_ARGS];
+    int num_args;
+
+} Command;
+
+typedef enum {
+    RES_OK,
+    RES_ERR,
+    RES_NULL
+} Response_Type;
+
+// helper functions
+void check_error(int value);
+int read_tcp_socket(int fd, char * buffer, int size);
+int write_tcp_socket(int fd, char * buffer, int size);
+void set_fd_nonblocking(int fd);
+
+// server functions
+int accept_new_connection(Conn * fd2conn[], int server_socket);
+void connection_io(Conn * conn);
+bool try_process_single_request(Conn * conn);
+bool try_fill_read_buffer(Conn * conn);
+bool try_flush_write_buffer(Conn * conn);
+void state_req(Conn * conn);
+void state_resp(Conn * conn);
+
 
 #endif

@@ -1,12 +1,5 @@
 {
     "files.associations": {
-        "server.h": "c",
-        "fcntl.h": "c",
-        "array": "c",
-        "string_view": "c",
-        "initializer_list": "c",
-        "utility": "c",
-        "in.h": "c",
-        "stdlib.h": "c"
+        "hashtable.h": "c"
     }
 }

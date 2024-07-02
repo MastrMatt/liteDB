@@ -10,5 +10,6 @@ the len of the message is a 4 byte little endian ordered integer, followed by th
 | len | msg1 | len | msg2 | more...
 +-----+------+-----+------+--------
 
+-Note: the client sends strings that are not null terminated due to pipelining
 
 
