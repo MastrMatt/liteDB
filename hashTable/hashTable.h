@@ -24,9 +24,9 @@ int hash(char * key);
 HashTable * hcreate(int size);
 
 // To insert a node, need to dynamically allocate memory for the node, key, and value. Then, calculate the hash code for the key and store it in the node
-void hinsert(HashTable * table, HashNode * node);
+HashNode * hinsert(HashTable * table, HashNode * node);
 HashNode * hget(HashTable * table, char * key);
-void hremove(HashTable * table, char * key);
+HashNode * hremove(HashTable * table, char * key);
 HashTable * hresize(HashTable * table);
 void hprint(HashTable * table);
 

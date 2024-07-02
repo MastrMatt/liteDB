@@ -41,11 +41,10 @@ HashTable * hcreate(int size) {
 
 
 // Inserts a node into the hashtable
-void hinsert(HashTable * table, HashNode * node) {
+HashNode * hinsert(HashTable * table, HashNode * node) {
     // check if the table is full
     if (table->size == table->mask + 1) {
-        fprintf(stderr, "Table is full\n");
-        return;
+        return NULL;
     }
 
     // calculate the index
@@ -56,6 +55,8 @@ void hinsert(HashTable * table, HashNode * node) {
     table->nodes[index] = node;
 
     table->size++;
+
+    return node;
 }
 
 
@@ -79,13 +80,12 @@ HashNode * hget(HashTable * table, char * key) {
         traverseList = traverseList->next;
     }
 
-    fprintf(stderr, "Key not found\n");
     return NULL;
 }
     
 
 // Removes a node from the hashtable given a key
-void hremove(HashTable * table, char * key) {
+HashNode * hremove(HashTable * table, char * key) {
     // calculate the hash value for the key
     int hashCode = hash(key);
 
@@ -112,15 +112,15 @@ void hremove(HashTable * table, char * key) {
             table->size--;
         
 
-            return;
+            // return the node that was removed
+            return traverseList;
         }
 
         prev = traverseList;
         traverseList = traverseList->next;
     }
 
-    fprintf(stderr, "Key not found to delete\n");
-    return;
+    return NULL;
 }
 
 
