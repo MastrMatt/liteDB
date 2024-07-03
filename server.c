@@ -56,21 +56,172 @@ void connection_io(Conn * conn) {
     }
 }
 
-// execute the command and return the response
-char * execute_command(Command * cmd) {
-    if (strcmp(cmd->name, "get") == 0) {
-        // get the value from the hash table
-        HashNode * fetched_node = hget(global_table, cmd->args[0]);
 
-        if (fetched_node) {
-            return fetched_node->value;
-        } else {
-            return "ERR Key not found";
-        }
+char * get_response( ValueType type, char * value) {
+    SerialType ser_type = SER_NIL;
+    int value_len = 0;
+
+    switch (type) {
+        case STRING:
+            ser_type = SER_STR;
+            value_len = strlen(value);
+            break;
+        case INTEGER:
+            ser_type = SER_INT;
+            value_len = sizeof(int);
+            break;
     }
 
+    // null terminate the response
+    char * response = calloc(1 + 4 + value_len + 1, sizeof(char));
+
+    if (!response) {
+        fprintf(stderr, "Failed to allocate memory for get response\n");
+        exit(EXIT_FAILURE);
+    }
+
+    // write the type of the response, 1 byte
+    memcpy(response, &ser_type, 1);
+
+    // write the length of the value, 4 bytes
+    memcpy(response + 1, &value_len, 4);
+
+    // write the value
+    memcpy(response + 1 + 4, value, value_len);
+
+    return response;
+}
+
+
+char * null_response() {
+    SerialType type = SER_NIL;
+    int value_len = 0;
+
+    // null terminate the response
+    char * response = calloc(1 + 4 + 1, sizeof(char));
+
+    if (!response) {
+        fprintf(stderr, "Failed to allocate memory for set response\n");
+        exit(EXIT_FAILURE);
+    }
+
+    // write the type of the response, 1 byte
+    memcpy(response, &type, 1);
+
+    // write the length of the value, 4 bytes
+    memcpy(response + 1, &value_len, 4);
+
+    return response;
+}
+    
+
+char * error_response(char * err_msg) {
+    SerialType type = SER_ERR;
+    int err_msg_len = strlen(err_msg);
+
+    // null terminate the response
+    char * response = calloc(1 + 4 + err_msg_len + 1, sizeof(char));
+
+    if (!response) {
+        fprintf(stderr, "Failed to allocate memory for error response\n");
+        exit(EXIT_FAILURE);
+    }
+
+    // write the type of the response, 1 byte 
+    memcpy(response, &type, 1);
+
+    // write the length of the error message, 4 bytes
+    memcpy(response + 1, &err_msg_len, 4);
+
+    // write the error message
+    memcpy(response + 1 + 4, err_msg, err_msg_len);
+
+    return response;
+}
+
+
+// ! Remember to free response after using it
+// execute the command and return the server response string
+char * execute_command(Command * cmd) {
+    if (strcmp(cmd->name, "get") == 0) {
+
+        // check if the command has the correct number of arguments
+        if (cmd->num_args != 1) {
+            return error_response("get command requires 1 argument");
+        }
+
+        // get the value from the hash table
+        HashNode * fetched_node = hget(global_table, cmd->args[0]);
+        if (!fetched_node) {
+            return error_response("Key not in database");
+        }
+
+        // get the value from the hash node
+        ValueType type = fetched_node->valueType;
+        char * value = fetched_node->value;
+
+        return get_response(type,value);
+
+    } else if (strcmp(cmd->name, "set") == 0) {
+        SerialType type = SER_NIL;
+
+        // obtain type of the value
+        if (cmd->num_args != 2) {
+            return error_response("set command requires 2 arguments");
+        }
+
+        // use strtol and duck typing to determine the type of the value
+        char * endptr;
+        long value = strtol(cmd->args[1], &endptr, 10);
+
+        // check if sucessfully converted to an integer
+        if ((*endptr == '\0') && (endptr != cmd->args[1])) {
+            type = INTEGER;
+            // convert long to int(database only supports int)
+            int int_value = (int) value;
+        } else {
+            type = STRING;
+        }
+
+        // set the value in the hash table
+        HashNode * new_node = calloc(1, sizeof(HashNode));
+        if (!new_node) {
+            fprintf(stderr, "Failed to allocate memory for new node\n");
+            exit(EXIT_FAILURE);
+        }
+
+        new_node->key = cmd->args[0];
+        new_node->value = cmd->args[1];
+        new_node->valueType = type;
+
+        hinsert(global_table, new_node);
+
+        return null_response();
+    } else if (strcmp(cmd->name, "del") == 0) {
+        if (cmd->num_args != 1) {
+            return error_response("del command requires 1 argument");
+        }
+
+        // remove the value from the hash table
+        HashNode * removed_node = hremove(global_table, cmd->args[0]);
+
+        if (!removed_node) {
+            return error_response("Key not in database");
+        }
+
+        return null_response();
+    }
+
+    // free the command
+    free(cmd->name);
+
+    // free all args
+    for (int i = 0; i < cmd->num_args; i++) {
+        free(cmd->args[i]);
+    }
     
 }
+
 
 bool try_process_single_request(Conn * conn) {
     // check if the read buffer has enough data to process a request
@@ -95,35 +246,26 @@ bool try_process_single_request(Conn * conn) {
         return false;
     }
 
-    // parse the message to extract the command
-    Command * cmd = parse_cmd_string(conn->read_buffer + 4, message_size);
-
-    // execute the command
-    char * response = execute_command(conn);
-
-
     // print the message, account for the fact that the message is not null terminated due to pipe-lining
     printf("Client %d says: %.*s\n", conn->fd, message_size, conn->read_buffer + 4);
 
-    // Echo the message back to the client with some prefix from the server
-    char * prefix = "Server echoes: ";
-    int prefix_size = strlen(prefix);
-    int total_size = prefix_size + message_size;
+    // parse the message to extract the command
+    Command * cmd = parse_cmd_string(conn->read_buffer + 4, message_size);
+
+    // execute the command, response is a null terminated byte string following the protocol
+    char * response = execute_command(conn);
+    int total_size = strlen(response);
 
     if (total_size > MAX_MESSAGE_SIZE) {
-        fprintf(stderr, "Server prefixed message too large\n");
+        fprintf(stderr, "Server sending a message that is too long\n");
         conn->state = STATE_DONE;
         return false;
     }
 
-    // write the size of full message
-    memcpy(conn->write_buffer, &total_size, 4);
+    // copy the response byte string to the write buffer
+    memcpy(conn->write_buffer, &response, total_size);
 
-    // write the message to the buffer
-    memcpy(conn->write_buffer + 4, prefix, prefix_size);
-    memcpy(conn->write_buffer + 4 + prefix_size, conn->read_buffer + 4, message_size);
-
-    conn->need_write_size = 4 + total_size;
+    conn->need_write_size = total_size;
 
     // remove the request from the read buffer
     int remaining_size = conn->current_read_size - (4 + message_size);

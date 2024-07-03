@@ -112,7 +112,7 @@ HashNode * hremove(HashTable * table, char * key) {
             table->size--;
         
 
-            // return the node that was removed
+            // return the node that was removed, don't try to acess later will get segfault
             return traverseList;
         }
 
@@ -166,7 +166,13 @@ void hprint(HashTable * table) {
         printf("Index: %d\n", i);
 
         while (traverseList != NULL) {
-            printf("Key: %s, Value: %s\n", traverseList->key, traverseList->value);
+            // printf("Key: %s, Value: %s\n", traverseList->key, traverseList->value);
+            if (traverseList->valueType == STRING) {
+                printf("Key: %s, Value: %s\n", traverseList->key, traverseList->value);
+            } else if (traverseList->valueType == INTEGER) {
+                printf("Key: %s, Value: %d\n", traverseList->key, *(int *)traverseList->value);
+            }
+
             traverseList = traverseList->next;
         }
 

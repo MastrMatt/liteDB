@@ -3,13 +3,20 @@
 #include <string.h>
 
 
+// Define the value type enum
+typedef enum { STRING, INTEGER } ValueType;
+
+// Define the HashNode structure
 typedef struct HashNode {
     char *key;
+    
+    // value is a byte string that can be cast to the appropriate type based on the valueType
     char *value;
-    struct HashNode * next;
+
+    ValueType valueType;
+    struct HashNode *next;
     int hashCode;
 } HashNode;
-
 
 typedef struct {
     // Array of HashNode pointers

@@ -119,10 +119,13 @@ int main() {
         return 1;
     }
 
-    node2->value = calloc(sizeof(char), 7);
-
     strcpy(node2->key, "key20");
-    strcpy(node2->value, "value2");
+
+    // store an integer value
+    node2->value = calloc(sizeof(int), 1);
+    *(int *)node2->value = 43;
+
+    node2->valueType = INTEGER;
 
     node2->hashCode = hash(node2->key);
 

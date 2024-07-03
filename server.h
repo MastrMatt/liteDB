@@ -53,10 +53,12 @@ typedef struct {
 } Command;
 
 typedef enum {
-    RES_OK,
-    RES_ERR,
-    RES_NULL
-} Response_Type;
+    SER_NIL,
+    SER_ERR,
+    SER_STR,
+    SER_INT,
+    SER_ARR
+} SerialType;
 
 // helper functions
 void check_error(int value);
