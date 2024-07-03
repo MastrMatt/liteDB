@@ -140,7 +140,6 @@ char * error_response(char * err_msg) {
 }
 
 
-// ! Remember to free response after using it
 // execute the command and return the server response string
 char * execute_command(Command * cmd) {
     if (strcmp(cmd->name, "get") == 0) {
@@ -264,6 +263,9 @@ bool try_process_single_request(Conn * conn) {
 
     // copy the response byte string to the write buffer
     memcpy(conn->write_buffer, &response, total_size);
+
+    // free the response
+    free(response);
 
     conn->need_write_size = total_size;
 
