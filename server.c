@@ -73,7 +73,7 @@ char * get_response( ValueType type, char * value) {
     }
 
     // null terminate the response
-    char * response = calloc(1 + 4 + value_len + 1, sizeof(char));
+    char * response = calloc(1 + 4 + value_len, sizeof(char));
 
     if (!response) {
         fprintf(stderr, "Failed to allocate memory for get response\n");
@@ -98,7 +98,7 @@ char * null_response() {
     int value_len = 0;
 
     // null terminate the response
-    char * response = calloc(1 + 4 + 1, sizeof(char));
+    char * response = calloc(1 + 4, sizeof(char));
 
     if (!response) {
         fprintf(stderr, "Failed to allocate memory for set response\n");
@@ -120,7 +120,7 @@ char * error_response(char * err_msg) {
     int err_msg_len = strlen(err_msg);
 
     // null terminate the response
-    char * response = calloc(1 + 4 + err_msg_len + 1, sizeof(char));
+    char * response = calloc(1 + 4 + err_msg_len, sizeof(char));
 
     if (!response) {
         fprintf(stderr, "Failed to allocate memory for error response\n");
@@ -234,7 +234,12 @@ char * execute_command(Command * cmd) {
         // * All data is stored as strings except for the ZSET values
         new_node->valueType = STRING;
 
-        hinsert(global_table, new_node);
+        HashNode * ret = hinsert(global_table, new_node);
+        if (ret == NULL) {
+            return error_response("Error inserting key in database");
+        }
+
+        hprint(global_table);
 
         return null_response();
     } else if (strcmp(cmd->name, "del") == 0) {
@@ -296,23 +301,27 @@ bool try_process_single_request(Conn * conn) {
 
     // execute the command, response is a null terminated byte string following the protocol
     char * response = execute_command(cmd);
-    int total_size = strlen(response);
 
-    printf("Server response: %.*s\n", total_size, response);
+    // copy the type of the response
+    memcpy(conn->write_buffer, response, 1 );
 
-    if (total_size > MAX_MESSAGE_SIZE) {
-        fprintf(stderr, "Server sending a message that is too long\n");
-        conn->state = STATE_DONE;
-        return false;
+    // copy the length of the message
+    memcpy(conn->write_buffer + 1, response + 1, 4);
+
+    // copy the message
+    int ret_message_size = 0;
+    memcpy(&ret_message_size, conn->write_buffer + 1, 4);
+
+    if (ret_message_size > MAX_MESSAGE_SIZE) {
+        fprintf(stderr, "Server trying to send a message that is too big\n");
     }
 
-    // copy the response byte string to the write buffer
-    memcpy(conn->write_buffer, &response, total_size);
+    memcpy(conn->write_buffer + 5, response + 5, ret_message_size);
 
     // free the response
     free(response);
 
-    conn->need_write_size = total_size;
+    conn->need_write_size = 1 + 4 + ret_message_size;
 
     // remove the request from the read buffer
     int remaining_size = conn->current_read_size - (4 + message_size);
@@ -450,6 +459,10 @@ void state_resp(Conn * conn) {
 
 // build a TCP server that listens on port 
 int main (int argc, char * argv []) {
+
+    // Initialize the global hash table
+    // global_table = hcreate(INIT_TABLE_SIZE);
+    global_table = hcreate(16);
 
     // create the socket
     int server_socket= socket(AF_INET, SOCK_STREAM, 0);

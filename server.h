@@ -19,6 +19,7 @@
 #define SERVERPORT 9000
 #define MAX_MESSAGE_SIZE 4096
 #define MAX_CLIENTS 2047
+#define INIT_TABLE_SIZE 1024
 
 // Protocol information
 #define MAX_ARGS 10

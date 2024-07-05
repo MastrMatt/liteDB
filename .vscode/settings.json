@@ -1,6 +1,7 @@
 {
     "files.associations": {
         "hashtable.h": "c",
-        "cstdlib": "c"
+        "cstdlib": "c",
+        "server.h": "c"
     }
 }

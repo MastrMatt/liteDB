@@ -22,6 +22,7 @@ typedef struct {
     // Array of HashNode pointers
     HashNode ** nodes;
 
+    float loadFactor;
     int size;
     int mask;
 } HashTable;
@@ -31,9 +32,10 @@ int hash(char * key);
 HashTable * hcreate(int size);
 
 // To insert a node, need to dynamically allocate memory for the node, key, and value. Then, calculate the hash code for the key and store it in the node
+HashTable * hcreate(int size);
+HashTable * hresize(HashTable * table);
 HashNode * hinsert(HashTable * table, HashNode * node);
 HashNode * hget(HashTable * table, char * key);
 HashNode * hremove(HashTable * table, char * key);
-HashTable * hresize(HashTable * table);
 void hprint(HashTable * table);
 

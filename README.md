@@ -22,6 +22,11 @@ msg: reponse msg
 type | len | msg
 +-----+------+-----+
 
+for arrays: 
++-----+------+-----+------+------+------+------+------+-----+---------+
+type | len_array | type_1 | len_1| element_1| type-2| len_2| element_2
++-----+------+-----+------+------+------+------+------+-----+---------+
+
 -ZSET will be storing integers
 
 

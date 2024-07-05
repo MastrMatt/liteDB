@@ -1,7 +1,107 @@
 #include "server.h"
 
 
-int send_request(int confd, char * message) {
+int process_server_response(int confd) {
+    char buffer[5 + MAX_MESSAGE_SIZE];
+
+    int err = 0;
+    int type = 0;
+    int message_size = 0;
+
+    // read the type of the response message
+    err = read_tcp_socket(confd, buffer, 1);
+    if (err) {
+        if (err < 0) {
+            perror("read failed");
+        } else {
+            fprintf(stderr, "EOF reached before reading full message size\n");
+        }
+
+        return err;
+    }
+
+    // read the message size
+    err = read_tcp_socket(confd, buffer + 1, 4);
+
+    if (err) {
+        if (err < 0) {
+            perror("read failed");
+        } else {
+            fprintf(stderr, "EOF reached before reading full message size\n");
+        }
+        return err;
+    }
+
+    memcpy(&message_size, buffer + 1, 4);
+
+    if(message_size > MAX_MESSAGE_SIZE) {
+        fprintf(stderr, "Message too long\n");
+        return -1;
+    }
+
+    type = 0;
+    memcpy(&type, buffer, 1);
+
+    message_size = 0;
+    memcpy(&message_size, buffer + 1, 4);
+
+    switch (type) {
+        case SER_NIL:
+            printf("(nil)\n");
+            return 0;
+            break;
+        case SER_ERR:
+            // read the response message
+            err = read_tcp_socket(confd, buffer + 5, message_size);
+            if (err) {
+                if (err < 0) {
+                    perror("read failed");
+                } else {
+                    fprintf(stderr, "EOF reached before reading full message size\n");
+                }
+                return err;
+            }
+
+            printf("(err) %.*s\n", message_size, buffer + 5);
+            return 0;
+            break;
+        case SER_STR:
+            // read the response message
+            err = read_tcp_socket(confd, buffer + 5, message_size);
+            if (err) {
+                if (err < 0) {
+                    perror("read failed");
+                } else {
+                    fprintf(stderr, "EOF reached before reading full message size\n");
+                }
+                return err;
+            }
+        
+            printf("(str) %.*s\n", message_size, buffer + 5);
+            return 0;
+            break;
+        case SER_ARR:
+            printf("(arr) len %d\n", message_size);
+
+            // message size is length of the array
+            for (int i = 0; i < message_size; i++) {
+                err = process_server_response(confd);
+                if (err) {
+                    return err;
+                }
+            }
+
+            printf("(arr) end\n");
+            return 0;
+
+        default:
+            fprintf(stderr, "Unknown response type\n");
+            return -1;
+    }
+}
+
+
+int handle_request(int confd, char * message) {
     char buffer[4 + MAX_MESSAGE_SIZE + 1];
 
     // write the message size
@@ -27,46 +127,15 @@ int send_request(int confd, char * message) {
         return err;
     }
 
-    // read the response message size
-    err = read_tcp_socket(confd, buffer, 4);
+    err = process_server_response(confd);
     if (err) {
-        if (err < 0) {
-            perror("read failed");
-        } else {
-            fprintf(stderr, "EOF reached before reading full message size\n");
-        }
+        fprintf(stderr, "Error processing server response\n");
         return err;
     }
-
-    memcpy(&message_size, buffer, 4);
-
-    if(message_size > MAX_MESSAGE_SIZE) {
-        fprintf(stderr, "Message too long\n");
-        return -1;
-    }
-
-    // read the response message
-    err = read_tcp_socket(confd, buffer + 4, message_size);
-    if (err) {
-        if (err < 0) {
-            perror("read failed");
-        } else {
-            fprintf(stderr, "EOF reached before reading full message size\n");
-        }
-        return err;
-    }
-
-    printf("Message size: %d\n", message_size);
-
-    // add the null terminator
-    buffer[4 + message_size] = '\0';
-
-    // print the message
-    printf("Server says: %s\n", buffer + 4);
 
     return 0;
-}
 
+}
 
 int main() {
     int client_socket;
@@ -91,11 +160,15 @@ int main() {
     check_error(connect(client_socket, (struct sockaddr *) &server_address, sizeof(server_address)));
 
     while (1) {
-        char message[100];
+        char message[200];
         printf("Enter a short message: ");
-        fgets(message, 100, stdin);
+        fgets(message, 200, stdin);
+
+        // remove the newline character
+        message[strlen(message) - 1] = '\0';
     
-        int err = send_request(client_socket, message);
+        int err = handle_request(client_socket, message);
+
         if (err < 0) {
             break;
         }

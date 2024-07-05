@@ -42,13 +42,26 @@ HashTable * hcreate(int size) {
 
 // Inserts a node into the hashtable
 HashNode * hinsert(HashTable * table, HashNode * node) {
-    // check if the table is full
-    if (table->size == table->mask + 1) {
-        return NULL;
+    // check if the table is full or if load factor is too high
+    if ((table->size == table->mask + 1) || (table->size / (table->mask + 1) > table->loadFactor)) {
+        
+        table->size == table -> mask + 1 ? printf("Table is full\n") : printf("Load factor is too high\n");
+
+        // resize the table
+        table = hresize(table);
+        hinsert(table, node);
     }
 
     // calculate the index
-    int index = node->hashCode & table->mask;
+    int hashCode = hash(node->key);
+    node->hashCode = hashCode;
+    int index = hashCode & table->mask;
+
+    // make sure the key is unique
+    if (hget(table, node->key) != NULL) {
+        fprintf(stderr, "Key already exists in the table\n");
+        return NULL;
+    }
 
     // insert the node at the head of the linked list
     node->next = table->nodes[index];
