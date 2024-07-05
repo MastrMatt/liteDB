@@ -10,10 +10,10 @@ typedef enum { STRING, INTEGER } ValueType;
 typedef struct HashNode {
     char *key;
     
+    ValueType valueType;
     // value is a byte string that can be cast to the appropriate type based on the valueType
     char *value;
 
-    ValueType valueType;
     struct HashNode *next;
     int hashCode;
 } HashNode;

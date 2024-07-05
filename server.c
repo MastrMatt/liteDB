@@ -140,6 +140,45 @@ char * error_response(char * err_msg) {
 }
 
 
+
+// Parse a request from the client(not null terminated) , need to free the returned command and it's args
+Command * parse_cmd_string(char *cmd_string, int size) {
+    Command *cmd = calloc(1, sizeof(Command));
+    if (!cmd) {
+        fprintf(stderr, "Failed to allocate memory for Command\n");
+        exit(EXIT_FAILURE);
+    }
+
+    // Create a new null-terminated string to hold the command string
+    char *n_cmd_string = calloc(size + 1, sizeof(char));
+    if (!n_cmd_string) {
+        fprintf(stderr, "Failed to allocate memory for n_cmd_string\n");
+        exit(EXIT_FAILURE);
+    }
+    strncpy(n_cmd_string, cmd_string, size);
+
+    // Tokenize the command string by splitting at spaces
+    char *token = strtok(n_cmd_string, " ");
+    int args = 0;
+
+    while (token != NULL) {
+        if (args == 0) {
+            cmd->name = strdup(token); // Use strdup for convenience
+        } else {
+            cmd->args[args - 1] = strdup(token); // Assuming args array is preallocated
+        }
+        token = strtok(NULL, " ");
+        args++;
+    }
+
+    cmd->num_args = args - 1;
+
+    free(n_cmd_string);
+
+    return cmd;
+}
+
+
 // execute the command and return the server response string
 char * execute_command(Command * cmd) {
     if (strcmp(cmd->name, "get") == 0) {
@@ -162,25 +201,25 @@ char * execute_command(Command * cmd) {
         return get_response(type,value);
 
     } else if (strcmp(cmd->name, "set") == 0) {
-        SerialType type = SER_NIL;
 
         // obtain type of the value
         if (cmd->num_args != 2) {
             return error_response("set command requires 2 arguments");
         }
 
-        // use strtol and duck typing to determine the type of the value
-        char * endptr;
-        long value = strtol(cmd->args[1], &endptr, 10);
+        // ! This is the code for ZSETS, move later
+        // // use strtol and duck typing to determine the type of the value
+        // char * endptr;
+        // long value = strtol(cmd->args[1], &endptr, 10);
 
-        // check if sucessfully converted to an integer
-        if ((*endptr == '\0') && (endptr != cmd->args[1])) {
-            type = INTEGER;
-            // convert long to int(database only supports int)
-            int int_value = (int) value;
-        } else {
-            type = STRING;
-        }
+        // // check if sucessfully converted to an integer
+        // if ((*endptr == '\0') && (endptr != cmd->args[1])) {
+        //     type = INTEGER;
+        //     // convert long to int(database only supports int)
+        //     int int_value = (int) value;
+        // } else {
+        //     type = STRING;
+        // }
 
         // set the value in the hash table
         HashNode * new_node = calloc(1, sizeof(HashNode));
@@ -191,7 +230,9 @@ char * execute_command(Command * cmd) {
 
         new_node->key = cmd->args[0];
         new_node->value = cmd->args[1];
-        new_node->valueType = type;
+
+        // * All data is stored as strings except for the ZSET values
+        new_node->valueType = STRING;
 
         hinsert(global_table, new_node);
 
@@ -209,6 +250,8 @@ char * execute_command(Command * cmd) {
         }
 
         return null_response();
+    } else {
+        return error_response("Unknown command");
     }
 
     // free the command
@@ -252,8 +295,10 @@ bool try_process_single_request(Conn * conn) {
     Command * cmd = parse_cmd_string(conn->read_buffer + 4, message_size);
 
     // execute the command, response is a null terminated byte string following the protocol
-    char * response = execute_command(conn);
+    char * response = execute_command(cmd);
     int total_size = strlen(response);
+
+    printf("Server response: %.*s\n", total_size, response);
 
     if (total_size > MAX_MESSAGE_SIZE) {
         fprintf(stderr, "Server sending a message that is too long\n");
@@ -346,6 +391,7 @@ bool try_fill_read_buffer(Conn * conn) {
 }
 
 bool try_flush_write_buffer(Conn * conn) {
+    
     int write_size = 0;
 
     // attempt to write to the socket until we have written some characters or a signal has not interrupted the write
@@ -409,6 +455,9 @@ int main (int argc, char * argv []) {
     int server_socket= socket(AF_INET, SOCK_STREAM, 0);
     check_error(server_socket);
     
+    // Set the socket options to allow address reuse, only for debugging
+    int optval = 1;
+    check_error(setsockopt(server_socket, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof(optval)));
 
     // define the server address
     struct sockaddr_in server_address;

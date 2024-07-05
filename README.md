@@ -7,21 +7,22 @@
 
 -Client will send a command of the regular communication protocol:
 len(4 bytes): little endian integer representing the length of the msg
+msg: the cmd string to be executed, args seperated by spaces
 +-----+------+-----+------+--------
 | len | msg1 | len | msg2 | more...
 +-----+------+-----+------+--------
 
 
 -Server will respond with a message of format:
-type(1 byte): null,err,int,string,arr
+type(1 byte): null,err,string,arr
 len(4 bytes): little endian integer representing the length of the msg
-data: reponse data
+msg: reponse msg
 
 +-----+------+-----+
-type | len | data
+type | len | msg
 +-----+------+-----+
 
--database stores long values
+-ZSET will be storing integers
 
 
 
