@@ -255,7 +255,49 @@ char * execute_command(Command * cmd) {
         }
 
         return null_response();
-    } else {
+    } else if (strcmp(cmd->name, "keys") == 0) {
+        // get all the keys in the hash table
+        int num_keys = 0;
+        int inc_buffer = 5;
+
+        // Create a static arr to view data here
+        char * buffer = calloc(1 + 4 + MAX_MESSAGE_SIZE, sizeof(char));
+    
+        // iterate through the hash table and write the keys to the buffer
+        for (int i = 0; i <= global_table->mask; i++) {
+            HashNode * traverseList = global_table->nodes[i];
+    
+            while (traverseList != NULL) {
+                // write the key to the buffer
+                int type = SER_STR;
+                int key_len = strlen(traverseList->key);
+
+                // check if the buffer has enough space to write the key
+                if (inc_buffer + 5 + key_len > MAX_MESSAGE_SIZE) {
+                        fprintf(stderr, "Failed to reallocate memory for keys response\n");
+                        exit(EXIT_FAILURE);
+                }
+
+                // write the type and length of the response, 1 byte
+                memcpy(buffer + inc_buffer, &type, 1);
+                memcpy(buffer + inc_buffer + 1, &key_len, 4);
+
+                // write the key
+                memcpy(buffer + inc_buffer + 5, traverseList->key, key_len);
+
+                inc_buffer += 5 + key_len;
+                num_keys++;
+                traverseList = traverseList->next;
+            }
+        }
+
+        // write the type and length of array to buffer
+        int type = SER_ARR;
+        memcpy(buffer, &type, 1);
+        memcpy(buffer + 1, &num_keys, 4);
+
+        return buffer;
+    } else  {
         return error_response("Unknown command");
     }
 
