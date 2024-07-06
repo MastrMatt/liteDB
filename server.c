@@ -239,8 +239,6 @@ char * execute_command(Command * cmd) {
             return error_response("Error inserting key in database");
         }
 
-        hprint(global_table);
-
         return null_response();
     } else if (strcmp(cmd->name, "del") == 0) {
         if (cmd->num_args != 1) {
@@ -262,7 +260,7 @@ char * execute_command(Command * cmd) {
 
         // Create a static arr to view data here
         char * buffer = calloc(1 + 4 + MAX_MESSAGE_SIZE, sizeof(char));
-    
+
         // iterate through the hash table and write the keys to the buffer
         for (int i = 0; i <= global_table->mask; i++) {
             HashNode * traverseList = global_table->nodes[i];
@@ -311,6 +309,59 @@ char * execute_command(Command * cmd) {
     
 }
 
+// response is a byte string that follows the protocol, returns the number of bytes written to the buffer
+int buffer_write_response(char * buffer, char * response) {
+
+    // write type and size of message
+    memcpy(buffer, response, 1 + 4);
+
+    int type = 0;
+    memcpy(&type, buffer, 1);
+
+    int message_size = 0;
+    memcpy(&message_size, buffer + 1, 4);
+
+    // for the type and size of the message
+    int response_size = 1 + 4;
+
+    if (type == SER_ARR) {
+        for (int i = 0; i < message_size; i++) {
+            int el_len = 0;
+            memcpy(&el_len, response + response_size + 1, 4);
+
+            // make sure the buffer has enough space to write the response
+            if (response_size + 5 + el_len > MAX_MESSAGE_SIZE) {
+                fprintf(stderr, "Failed to reallocate memory for response\n");
+                exit(EXIT_FAILURE);
+            }
+
+            // write the response
+            memcpy(buffer + response_size, response + response_size, 5 + el_len);
+
+            response_size += 5 + el_len; 
+        }
+
+        return response_size;
+
+    } else {
+        // response without array
+        response_size += message_size;
+
+        // check if the buffer has enough space to write the response
+        if (response_size > MAX_MESSAGE_SIZE) {
+            fprintf(stderr, "Failed to reallocate memory for response\n");
+            exit(EXIT_FAILURE);
+        }   
+
+        // write the response
+        memcpy(buffer + 5, response + 5, message_size);
+
+        return response_size;
+    }
+
+}
+
+
 
 bool try_process_single_request(Conn * conn) {
     // check if the read buffer has enough data to process a request
@@ -344,26 +395,13 @@ bool try_process_single_request(Conn * conn) {
     // execute the command, response is a null terminated byte string following the protocol
     char * response = execute_command(cmd);
 
-    // copy the type of the response
-    memcpy(conn->write_buffer, response, 1 );
-
-    // copy the length of the message
-    memcpy(conn->write_buffer + 1, response + 1, 4);
-
-    // copy the message
-    int ret_message_size = 0;
-    memcpy(&ret_message_size, conn->write_buffer + 1, 4);
-
-    if (ret_message_size > MAX_MESSAGE_SIZE) {
-        fprintf(stderr, "Server trying to send a message that is too big\n");
-    }
-
-    memcpy(conn->write_buffer + 5, response + 5, ret_message_size);
+    // write response to the write buffer
+    int response_size = buffer_write_response(conn->write_buffer, response);
 
     // free the response
     free(response);
 
-    conn->need_write_size = 1 + 4 + ret_message_size;
+    conn->need_write_size = response_size;
 
     // remove the request from the read buffer
     int remaining_size = conn->current_read_size - (4 + message_size);

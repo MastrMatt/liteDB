@@ -81,7 +81,7 @@ int process_server_response(int confd) {
             return 0;
             break;
         case SER_ARR:
-            printf("(arr) len %d\n", message_size);
+            printf("(arr) len = %d\n", message_size);
 
             // message size is length of the array
             for (int i = 0; i < message_size; i++) {
@@ -161,7 +161,7 @@ int main() {
 
     while (1) {
         char message[200];
-        printf("Enter a short message: ");
+        printf("Enter a cmd: ");
         fgets(message, 200, stdin);
 
         // remove the newline character
