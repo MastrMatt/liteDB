@@ -1,6 +1,8 @@
 CC = gcc
 CC_FLAGS = -Wall -std=c99 -g
 
+all: test hashTable.o
+
 hashTable.o: hashTable.c hashTable.h
 	$(CC) $(CC_FLAGS) -c hashTable.c
 	

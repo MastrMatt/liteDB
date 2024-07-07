@@ -13,8 +13,9 @@
 #include <poll.h>
 #include <stdbool.h>
 
-// include the hashTable
+// include the hashTable and AVLTree
 # include "hashTable/hashTable.h"
+# include "AVLTree/AVLTree.h"
 
 #define SERVERPORT 9000
 #define MAX_MESSAGE_SIZE 4096

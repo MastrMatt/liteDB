@@ -4,7 +4,7 @@
 
 
 // Define the value type enum
-typedef enum { STRING, INTEGER } ValueType;
+typedef enum { STRING, INTEGER, FLOAT} ValueType;
 
 // Define the HashNode structure
 typedef struct HashNode {
@@ -29,6 +29,8 @@ typedef struct {
 
 // Function prototypes
 int hash(char * key);
+
+// size is the initial size of the hash table, must be a power of 2
 HashTable * hcreate(int size);
 
 // To insert a node, need to dynamically allocate memory for the node, key, and value. Then, calculate the hash code for the key and store it in the node

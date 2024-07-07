@@ -1,19 +1,17 @@
 #include "AVLTree.h"
 
-// Currenly using recursion 
-
-
-
+// Comparing functions
 int max (int a, int b) {
     return (a > b) ? a : b;
 }
 
-int avl_depth(AVLNode * node) {
+
+int avl_height(AVLNode * node) {
     if (!node) {
         return 0;
     }
 
-    return node->depth;
+    return node->height;
 }
 
 int avl_sub_tree_size(AVLNode * node) {
@@ -25,11 +23,11 @@ int avl_sub_tree_size(AVLNode * node) {
 }
 
 int avl_balance(AVLNode * node) {
-    return avl_depth(node->left) - avl_depth(node->right);
+    return avl_height(node->left) - avl_height(node->right);
 }
 
 void avl_update(AVLNode * node) {
-    node->depth = 1 + max(avl_depth(node->left), avl_depth(node->right));
+    node->height = 1 + max(avl_height(node->left), avl_height(node->right));
     node->sub_tree_size = 1 + avl_sub_tree_size(node->left) + avl_sub_tree_size(node->right);
 
     return;
@@ -73,7 +71,7 @@ AVLNode * avl_rotate_right(AVLNode * node) {
 }       
 
 
-AVLNode * avl_init(float value) {
+AVLNode * avl_init(void * scnd_index, float value) {
 
     AVLNode * node = (AVLNode *) calloc(1, sizeof(AVLNode));
     if (node == NULL) {
@@ -81,32 +79,32 @@ AVLNode * avl_init(float value) {
         return NULL;
     }
 
-    node->depth = 1;
+    node->height = 1;
     node->sub_tree_size = 1;
     node->left = NULL;
     node->right = NULL;
     node->parent = NULL;
 
+    node->scnd_index = scnd_index;
     node->value = value;
 
     return node;
 }
 
-AVLNode * avl_insert(AVLNode * tree, float value) {
+AVLNode * avl_insert(AVLNode * tree, void * scnd_index, float value) {
     if (tree == NULL) {
-        // if the tree is empty, create a new node and return it
-        return avl_init(value);
+        return avl_init(scnd_index, value);
     } else if (value < tree->value) {
         // if the value is less than the current node, insert it to the left
-        tree->left = avl_insert(tree->left,value);
+        tree->left = avl_insert(tree->left, scnd_index, value);
         tree->left->parent = tree;
     } else {
         // if the value is greater than or equal to the current node, insert it to the right
-        tree->right = avl_insert(tree->right,value);
+        tree->right = avl_insert(tree->right, scnd_index, value);
         tree->right->parent = tree;
     }
 
-    // update the depth and sub_tree_size of the current node
+    // update the height and sub_tree_size of the current node
     avl_update(tree);       
 
     // check if the tree is balanced and balance, not since this is a recursive function, the tree will be balanced from the bottom up
@@ -146,17 +144,19 @@ AVLNode * get_min_node(AVLNode * tree) {
     return current;
 }
 
-AVLNode * avl_delete(AVLNode * tree, float value) {
+// delete a node by (float,scnd_index) pair 
+AVLNode * avl_delete(AVLNode * tree,void * scnd_index, float value) {
 
     if (tree == NULL) {
         return NULL;
     }
 
     if (value < tree->value) {
-        tree->left = avl_delete(tree->left, value);
+        tree->left = avl_delete(tree->left, scnd_index, value);
     } else if (value > tree->value) {
-        tree->right = avl_delete(tree->right, value);
-    } else {
+        tree->right = avl_delete(tree->right, scnd_index, value);
+    } else if (compare_scnd_index( scnd_index,tree->scnd_index) == 0 ) {
+    // found the exact node to delete
         if (tree->left == NULL) {
             AVLNode * temp = tree->right;
 
@@ -183,16 +183,20 @@ AVLNode * avl_delete(AVLNode * tree, float value) {
             // need to find the inorder successor
             AVLNode * temp = get_min_node(tree->right);
 
-            // copy the value of the inorder successor to the current node
+            // copy the value and scnd_index of the inorder successor
             tree->value = temp->value;
+            tree->scnd_index = temp->scnd_index;
 
             // delete the inorder successor
-            tree->right = avl_delete(tree->right, temp->value);
+            tree->right = avl_delete(tree->right, temp->scnd_index, temp->value);
         }
-
+    } else {
+        // keep searching for the node to delete
+        tree->left = avl_delete(tree->left, scnd_index, value);
+        tree->right = avl_delete(tree->right, scnd_index, value);
     }
 
-    // update the depth and sub_tree_size of the current node
+    // update the height and sub_tree_size of the current node
     avl_update(tree);
 
     // balance the tree
@@ -223,15 +227,15 @@ AVLNode * avl_delete(AVLNode * tree, float value) {
     return tree;
 }
 
-AVLNode * avl_search(AVLNode * tree, float value) {
+AVLNode * avl_search_float(AVLNode * tree, float value) {
     if (tree == NULL) {
         return NULL;
     }
 
     if (value < tree->value) {
-        return avl_search(tree->left, value);
+        return avl_search_float(tree->left, value);
     } else if (value > tree->value) {
-        return avl_search(tree->right, value);
+        return avl_search_float(tree->right, value);
     } else {
         return tree;
     }
@@ -249,6 +253,7 @@ void avl_free(AVLNode * tree) {
     free(tree);
 }
 
+
 // print inoder traversal, which is sorted
 void avl_print(AVLNode * tree) {
     if (tree == NULL) {
@@ -256,17 +261,9 @@ void avl_print(AVLNode * tree) {
     }
 
     avl_print(tree->left);
-    printf("%f\n", tree->value);
+    printf("value: %f , balance: %d , snd_index: %p \n", tree->value , avl_balance(tree), tree->scnd_index);
     avl_print(tree->right);
 }
-
-
-
-
-
-
-
-
 
         
 

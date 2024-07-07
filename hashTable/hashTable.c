@@ -13,7 +13,6 @@ int hash(char * key) {
     return hash;
 }
 
-
 // Creates a hashtable of the given size
 HashTable * hcreate(int size) {
     // check if the size is a power of 2, since we are using a mask to calculate the index (faster than modulo)

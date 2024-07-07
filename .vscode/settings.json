@@ -2,6 +2,8 @@
     "files.associations": {
         "hashtable.h": "c",
         "cstdlib": "c",
-        "server.h": "c"
+        "server.h": "c",
+        "type_traits": "c",
+        "zset.h": "c"
     }
 }
