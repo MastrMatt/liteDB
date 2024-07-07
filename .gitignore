@@ -1,6 +1,10 @@
 # vscode environment
 .vscode/
 
+# testing
+test/
+test
+
 #server and client
 server
 client
