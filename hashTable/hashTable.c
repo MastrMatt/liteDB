@@ -1,5 +1,6 @@
 // This is a simple implementation of a hashtable in C, with the ability to store strings and integers by specifying the ValueType. The hash function used is the djb2 hash function. The hashtable automatically resizes when the load factor exceeds a certain threshold. The hprint function is used to print the contents of the hashtable for debugging purposes. Insert hashnodes into the hashtable using hinsert, retrieve them using hget, and remove them using hremove. The hresize function is used to double the size of the hashtable when it is full.
 
+// !Change this module, should not be freeing memory it did not allocate (hremove)
 
 #include "hashTable.h"
 
