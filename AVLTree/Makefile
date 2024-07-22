@@ -1,5 +1,5 @@
 CC = gcc
-CC_FLAGS = -Wall -std=c99 -g
+CC_FLAGS = -Wall -g
 
 all: test AVLTree.o
 

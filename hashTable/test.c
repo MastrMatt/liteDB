@@ -8,6 +8,7 @@ int main() {
         return 1;
     }
 
+    // * since enum ValueType of string has a value of 0, calloc will initialize the value to 0
     HashNode * node = calloc(sizeof(HashNode), 1);
     if (node == NULL) {
         fprintf(stderr, "Memory allocation failed\n");

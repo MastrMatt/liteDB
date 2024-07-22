@@ -27,7 +27,7 @@ for arrays:
 type | len_array | type_1 | len_1| element_1| type-2| len_2| element_2
 +-----+------+-----+------+------+------+------+------+-----+---------+
 
--ZSET will be storing integers
+-LiteDB will store all values as strings except in the ZSET will be storing floats
 
 -*** Whoever allocates memory should be responsible for freeing it ***
 

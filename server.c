@@ -57,7 +57,7 @@ void connection_io(Conn * conn) {
 }
 
 
-char * get_response( ValueType type, char * value) {
+char * get_response( ValueType type, void * value) {
     SerialType ser_type = SER_NIL;
     int value_len = 0;
 
@@ -70,6 +70,13 @@ char * get_response( ValueType type, char * value) {
             ser_type = SER_INT;
             value_len = sizeof(int);
             break;
+        case FLOAT:
+            ser_type = SER_FLOAT;
+            value_len = sizeof(float);
+            break;
+        default:
+            fprintf(stderr, "Invalid value type\n");
+            exit(EXIT_FAILURE);      
     }
 
     // null terminate the response
@@ -140,7 +147,6 @@ char * error_response(char * err_msg) {
 }
 
 
-
 // Parse a request from the client(not null terminated) , need to free the returned command and it's args
 Command * parse_cmd_string(char *cmd_string, int size) {
     Command *cmd = calloc(1, sizeof(Command));
@@ -178,124 +184,406 @@ Command * parse_cmd_string(char *cmd_string, int size) {
     return cmd;
 }
 
+// executes and returns a string response for the get command
+char * get_command(Command * cmd) {
+     // check if the command has the correct number of arguments
+    if (cmd->num_args != 1) {
+        return error_response("get command requires 1 argument");
+    }
+
+    // get the value from the hash table
+    HashNode * fetched_node = hget(global_table, cmd->args[0]);
+    if (!fetched_node) {
+        return error_response("Key not in database");
+    }
+
+    // get the value from the hash node
+    ValueType type = fetched_node->valueType;
+
+    if (type == ZSET) {
+        return error_response("ZSET values not supported for this command");
+    }
+
+    char * value = fetched_node->value;
+
+    return get_response(type,value);
+}
+
+char * set_command(Command * cmd) {
+    
+    // obtain type of the value
+    if (cmd->num_args != 2) {
+        return error_response("set command requires 2 arguments");
+    }
+
+    // * All data is stored as strings except for the ZSET values
+    HashNode * new_node = hinit(strdup(cmd->args[0]), STRING, strdup(cmd->args[1]));
+    if (new_node == NULL) {
+        fprintf(stderr, "Error creating new node for hashtable\n");
+        exit(EXIT_FAILURE);
+    }
+
+    HashNode * ret = hinsert(global_table, new_node);
+    if (ret == NULL) {
+        return error_response("Failed to insert new node into global table");
+    }
+
+    return null_response();
+}
+
+char * del_command(Command * cmd) {
+
+    if (cmd->num_args != 1) {
+        return error_response("del command requires 1 argument");
+    }
+
+    // make sure the key is not for a ZSET
+    HashNode * fetched_node = hget(global_table, cmd->args[0]);
+    if (!fetched_node) {
+        return error_response("Key not in database");
+    }
+
+    if (fetched_node->valueType == ZSET) {
+        return error_response("ZSET values not supported for this command");
+    }
+
+    // remove the value from the hash table
+    HashNode * removed_node = hremove(global_table, cmd->args[0]);
+    
+    // free the removed node
+    hfree(removed_node);
+
+    return null_response();
+}
+
+// returns a protocol string, which contains an array of all the keys in the hash table
+char * keys_command() {
+    // get all the keys in the hash table
+    int num_keys = 0;
+    int inc_buffer = 5;
+
+    // buffer for the data
+    char * buffer = calloc(1 + 4 + MAX_MESSAGE_SIZE, sizeof(char));
+
+    // iterate through the hash table and write the keys to the buffer
+    for (int i = 0; i <= global_table->mask; i++) {
+        HashNode * traverseList = global_table->nodes[i];
+
+        while (traverseList != NULL) {
+            // write the key to the buffer
+            int type = SER_STR;
+            int key_len = strlen(traverseList->key);
+
+            // check if the buffer has enough space to write the key
+            if (inc_buffer + 5 + key_len > MAX_MESSAGE_SIZE) {
+                    fprintf(stderr, "Failed to reallocate memory for keys response\n");
+                    exit(EXIT_FAILURE);
+            }
+
+            // write the type and length of the response, 1 byte
+            memcpy(buffer + inc_buffer, &type, 1);
+            memcpy(buffer + inc_buffer + 1, &key_len, 4);
+
+            // write the key
+            memcpy(buffer + inc_buffer + 5, traverseList->key, key_len);
+
+            inc_buffer += 5 + key_len;
+            num_keys++;
+            traverseList = traverseList->next;
+        }
+    }
+
+    // write the type and length of array to buffer
+    int type = SER_ARR;
+    memcpy(buffer, &type, 1);
+    memcpy(buffer + 1, &num_keys, 4);
+
+    return buffer;
+}
+
+// zadd key score name
+char * zadd_command(Command * cmd) {
+    errno = 0;
+
+    ValueType response_type = INTEGER;
+    int elem_added = 0;
+
+    if (cmd->num_args < 3) {
+        return error_response("zadd command requires at least 3 arguments (key, score, name)");
+    }
+
+    char * zset_key = cmd->args[0];
+    char * score_str = cmd->args[1];
+
+    // convert the score to a float
+    // use strtol and duck typing to determine the type of the value
+    char *endptr;
+    float value = strtof(score_str, &endptr);
+
+    // check errors
+    if (errno) {
+        perror("strtof failed");
+        exit(EXIT_FAILURE);
+    }
+
+    // Check if successfully converted to a float
+    if (!(*endptr == '\0') || !(endptr != score_str)) {
+        return error_response("Failed to convert score to float");
+    } 
+
+    // fetch the zset from global table
+    HashNode * fetched_node = hget(global_table, zset_key);
+
+    if (!fetched_node) {
+        // create a new zset, 
+        ZSet * zset = zset_init();
+        if (!zset) {
+            fprintf(stderr, "Failed to create ZSet\n");
+            exit(EXIT_FAILURE);
+        }
+
+        // create a new hash node
+        HashNode * new_node = hinit(strdup(zset_key), ZSET, zset);
+        if (!new_node) {
+            fprintf(stderr, "Failed to create new hash node\n");
+            exit(EXIT_FAILURE);
+        }
+
+        // insert the new node into the global table
+        HashNode * ret = hinsert(global_table, new_node);
+        if (!ret) {
+            fprintf(stderr, "Failed to insert new node into global table\n");
+            exit(EXIT_FAILURE);
+        }
+
+        fetched_node = new_node;
+    }
+
+    // check if the value is a ZSET
+    if (fetched_node->valueType != ZSET) {
+        return error_response("key is not for a ZSET");
+    }
+
+    ZSet * zset = (ZSet *) fetched_node->value;
+
+    // add the value to the ZSET
+    int ret = zset_add(zset, cmd->args[2], value);
+    if (ret < 0) {
+        return error_response("Failed to add value to ZSET");
+    }
+    elem_added++;
+
+
+    return get_response(response_type, &elem_added);
+}
+
+// zrem key name
+char * zrem_command(Command * cmd) {
+    errno = 0;
+
+    ValueType response_type = INTEGER;
+    int elem_removed = 0;
+    
+        if (cmd->num_args < 2) {
+            return error_response("zrem command requires at least 2 arguments (key, name)");
+        }
+
+        char * zset_key = cmd->args[0];
+        char * element_key = cmd->args[1];
+
+        // fetch the zset from the global table
+        HashNode * fetched_node = hget(global_table, zset_key);
+        if (!fetched_node) {
+            return error_response("zset key not in database");
+        }
+
+        // check if the value is a ZSET
+        if (fetched_node->valueType != ZSET) {
+            return error_response("key is not for a zset");
+        }
+
+        ZSet * zset = (ZSet *) fetched_node->value;
+
+        // remove the value from the ZSET
+        int ret = zset_remove(zset, element_key);
+        if (ret < 0) {
+            return error_response("Failed to remove value from zset");
+        }       
+
+        elem_removed++;
+
+        return get_response(response_type, &elem_removed);
+}
+
+// zscore key name
+char * zscore_cmd(Command * cmd) {
+    errno = 0;
+
+    ValueType response_type = FLOAT;
+    float score;
+
+    if (cmd->num_args < 2) {
+        return error_response("zscore command requires at least 2 arguments (key, name)");
+    }
+
+    char * zset_key = cmd->args[0];
+    char * element_key = cmd->args[1];
+
+    // fetch the zset from the global table
+    HashNode * fetched_node = hget(global_table, zset_key);
+    if (!fetched_node) {
+        return error_response("zset key not in database");
+    }
+
+    // check if the value is a ZSET
+    if (fetched_node->valueType != ZSET) {
+        return error_response("key is not for a zset");
+    }
+
+    ZSet * zset = (ZSet *) fetched_node->value;
+
+    // search for the value in the ZSET
+    HashNode * ret_node = zset_search_by_key(zset, element_key);
+    if (!ret_node) {
+        return error_response("Element not in zset");
+    }
+
+    // check if the value is a float
+    if (ret_node->valueType != FLOAT) {
+        fprintf(stderr, "Value in zset is somehow not a float\n");
+        exit(EXIT_FAILURE);
+    }
+
+    score = *(float *) ret_node->value;
+
+    return get_response(response_type, &score);
+}
+
+// zquery key score name offset limit
+char * zquery_cmd(Command * cmd) {
+    errno = 0;
+
+    SerialType response_type = SER_ARR;
+
+    if (cmd->num_args < 5) {
+        return error_response("zquery command requires at least 3 arguments (key, score, name, offset, limit)");
+    }
+
+    char * zset_key = cmd->args[0];
+    char * score_str = cmd->args[1];
+    char * element_key = cmd->args[2];
+    char * offset_str = cmd->args[3];
+    char * limit_str = cmd->args[4];
+
+    float score;
+    long offset;
+    long limit;
+
+    // convert the score to a float
+    // use strtol and duck typing to determine the type of the value
+    char *endptr;
+    float score = strtof(score_str, &endptr);
+
+    // check errors
+    if (errno) {
+        perror("strtof failed");
+        exit(EXIT_FAILURE);
+    }
+
+    // Check if successfully converted to a float
+    if (!(*endptr == '\0') || !(endptr != score_str)) {
+        return error_response("Failed to convert score to float");
+    }
+
+    // convert the offset to a long
+    offset = strtol(offset_str, &endptr, 10);
+
+    // check errors
+    if (errno) {
+        perror("strtol failed");
+        exit(EXIT_FAILURE);
+    }
+
+    // Check if successfully converted to a long
+    if (!(*endptr == '\0') || !(endptr != offset_str)) {
+        return error_response("Failed to convert offset to integer");
+    }
+
+    // convert the limit to a long
+    limit = strtol(limit_str, &endptr, 10);
+
+    // check errors
+    if (errno) {
+        perror("strtol failed");
+        exit(EXIT_FAILURE);
+    }
+
+    // Check if successfully converted to a long  
+    if (!(*endptr == '\0') || !(endptr != limit_str)) {
+        return error_response("Failed to convert limit to integer");
+    }
+
+    // fetch the zset from the global table
+    HashNode * fetched_node = hget(global_table, zset_key);
+    if (!fetched_node) {
+        return error_response("zset key not in database");
+    }
+
+    // check if the value is a ZSET
+    if (fetched_node->valueType != ZSET) {
+        return error_response("key is not for a zset");
+    }
+
+    ZSet * zset = (ZSet *) fetched_node->value;
+
+
+    if (strcmp(element_key, "") == 0) {
+        // perform a range query
+
+    } else if (score == -INFINITY) {
+        
+
+    }
+        
+}
+
+
+
 
 // execute the command and return the server response string
 char * execute_command(Command * cmd) {
     if (strcmp(cmd->name, "get") == 0) {
 
-        // check if the command has the correct number of arguments
-        if (cmd->num_args != 1) {
-            return error_response("get command requires 1 argument");
-        }
-
-        // get the value from the hash table
-        HashNode * fetched_node = hget(global_table, cmd->args[0]);
-        if (!fetched_node) {
-            return error_response("Key not in database");
-        }
-
-        // get the value from the hash node
-        ValueType type = fetched_node->valueType;
-        char * value = fetched_node->value;
-
-        return get_response(type,value);
+        return get_command(cmd);
 
     } else if (strcmp(cmd->name, "set") == 0) {
 
-        // obtain type of the value
-        if (cmd->num_args != 2) {
-            return error_response("set command requires 2 arguments");
-        }
+        return set_command(cmd);
 
-        // ! This is the code for ZSETS, move later
-        // // use strtol and duck typing to determine the type of the value
-        // char * endptr;
-        // long value = strtol(cmd->args[1], &endptr, 10);
-
-        // // check if sucessfully converted to an integer
-        // if ((*endptr == '\0') && (endptr != cmd->args[1])) {
-        //     type = INTEGER;
-        //     // convert long to int(database only supports int)
-        //     int int_value = (int) value;
-        // } else {
-        //     type = STRING;
-        // }
-
-        // set the value in the hash table
-        HashNode * new_node = calloc(1, sizeof(HashNode));
-        if (!new_node) {
-            fprintf(stderr, "Failed to allocate memory for new node\n");
-            exit(EXIT_FAILURE);
-        }
-
-        new_node->key = cmd->args[0];
-        new_node->value = cmd->args[1];
-
-        // * All data is stored as strings except for the ZSET values
-        new_node->valueType = STRING;
-
-        HashNode * ret = hinsert(global_table, new_node);
-        if (ret == NULL) {
-            return error_response("Error inserting key in database");
-        }
-
-        return null_response();
     } else if (strcmp(cmd->name, "del") == 0) {
-        if (cmd->num_args != 1) {
-            return error_response("del command requires 1 argument");
-        }
 
-        // remove the value from the hash table
-        HashNode * removed_node = hremove(global_table, cmd->args[0]);
-
-        if (!removed_node) {
-            return error_response("Key not in database");
-        }
-
-        return null_response();
+       return del_command(cmd);
+       
     } else if (strcmp(cmd->name, "keys") == 0) {
-        // get all the keys in the hash table
-        int num_keys = 0;
-        int inc_buffer = 5;
 
-        // Create a static arr to view data here
-        char * buffer = calloc(1 + 4 + MAX_MESSAGE_SIZE, sizeof(char));
+        return keys_command();
 
-        // iterate through the hash table and write the keys to the buffer
-        for (int i = 0; i <= global_table->mask; i++) {
-            HashNode * traverseList = global_table->nodes[i];
-    
-            while (traverseList != NULL) {
-                // write the key to the buffer
-                int type = SER_STR;
-                int key_len = strlen(traverseList->key);
+    } else if (strcmp(cmd->name, "zadd")== 0) {
+            
+        return zadd_command(cmd);
 
-                // check if the buffer has enough space to write the key
-                if (inc_buffer + 5 + key_len > MAX_MESSAGE_SIZE) {
-                        fprintf(stderr, "Failed to reallocate memory for keys response\n");
-                        exit(EXIT_FAILURE);
-                }
+    } else if (strcmp(cmd->name, "zrem") == 0) {
+            
+        return zrem_command(cmd);
 
-                // write the type and length of the response, 1 byte
-                memcpy(buffer + inc_buffer, &type, 1);
-                memcpy(buffer + inc_buffer + 1, &key_len, 4);
+    } else if (strcmp(cmd->name, "zscore") == 0) {
 
-                // write the key
-                memcpy(buffer + inc_buffer + 5, traverseList->key, key_len);
-
-                inc_buffer += 5 + key_len;
-                num_keys++;
-                traverseList = traverseList->next;
-            }
-        }
-
-        // write the type and length of array to buffer
-        int type = SER_ARR;
-        memcpy(buffer, &type, 1);
-        memcpy(buffer + 1, &num_keys, 4);
-
-        return buffer;
-    } else  {
+        return zscore_cmd(cmd); 
+    }
+    else if (strcmp(cmd->name, "zquery") == 0) {
+        return error_response("zquery command not supported");
+    }
+    else {
         return error_response("Unknown command");
     }
 
@@ -306,7 +594,7 @@ char * execute_command(Command * cmd) {
     for (int i = 0; i < cmd->num_args; i++) {
         free(cmd->args[i]);
     }
-    
+
 }
 
 // response is a byte string that follows the protocol, returns the number of bytes written to the buffer

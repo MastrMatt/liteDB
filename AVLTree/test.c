@@ -13,6 +13,7 @@ int compare_scnd_index(void * scnd_index1, void * scnd_index2) {
 
 int main() {
     char * test_string = "test";
+    char * test_string2 = "test2";
     // test init
     AVLNode * tree = avl_init(test_string, 0);
 
@@ -24,8 +25,27 @@ int main() {
     tree = avl_insert(tree, test_string, -1);
     tree = avl_insert(tree, test_string, -2);
     tree = avl_insert(tree, test_string, -3);
+    tree = avl_insert(tree, test_string2, -3);
     tree = avl_insert(tree, test_string, -4);
-    
+
+    // test search by pair
+    AVLNode * pair1 = avl_search_pair(tree, test_string, -3);
+    AVLNode * pair2 = avl_search_pair(tree, test_string2, -3);
+
+    if (strcmp(pair1->scnd_index, test_string) != 0 || pair1->value != -3) {
+        printf("Search by pair failed, fetched wrong node\n");
+        exit(EXIT_FAILURE);
+    }
+
+    if (strcmp(pair2->scnd_index, test_string2) != 0 || pair2->value != -3) {
+        printf("Search by pair failed, fetched wrong node\n");
+        exit(EXIT_FAILURE);
+    }
+
+    if (!pair1 || !pair2) {
+        printf("Search by pair failed, did not fetch a node\n");
+        exit(EXIT_FAILURE);
+    }
 
     // test search
     AVLNode * node = avl_search_float(tree, 3);

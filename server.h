@@ -13,9 +13,8 @@
 #include <poll.h>
 #include <stdbool.h>
 
-// include the hashTable and AVLTree
-# include "hashTable/hashTable.h"
-# include "AVLTree/AVLTree.h"
+// Zset includes AVLTree and HashTable header
+#include "ZSet/ZSet.h"
 
 #define SERVERPORT 9000
 #define MAX_MESSAGE_SIZE 4096
@@ -59,7 +58,9 @@ typedef enum {
     SER_ERR,
     SER_STR,
     SER_INT,
-    SER_ARR
+    SER_FLOAT,
+    SER_ARR,
+
 } SerialType;
 
 // helper functions

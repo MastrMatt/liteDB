@@ -4,6 +4,9 @@
         "cstdlib": "c",
         "server.h": "c",
         "type_traits": "c",
-        "zset.h": "c"
+        "zset.h": "c",
+        "avltree.h": "c",
+        "socket.h": "c",
+        "unistd.h": "c"
     }
 }

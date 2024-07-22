@@ -227,6 +227,7 @@ AVLNode * avl_delete(AVLNode * tree,void * scnd_index, float value) {
     return tree;
 }
 
+
 AVLNode * avl_search_float(AVLNode * tree, float value) {
     if (tree == NULL) {
         return NULL;
@@ -240,6 +241,69 @@ AVLNode * avl_search_float(AVLNode * tree, float value) {
         return tree;
     }
 }
+
+
+AVLNode * avl_search_pair(AVLNode * tree, void * scnd_index, float value) {
+    if (tree == NULL) {
+        return NULL;
+    }
+
+    if (value < tree->value) {
+        return avl_search_pair(tree->left, scnd_index, value);
+    } else if (value > tree->value) {
+        return avl_search_pair(tree->right, scnd_index, value);
+    } else if (compare_scnd_index(scnd_index, tree->scnd_index) == 0) {
+        return tree;
+    } else {
+        // look in both directions for the pair
+        AVLNode * left = avl_search_pair(tree->left, scnd_index, value);
+        AVLNode * right = avl_search_pair(tree->right, scnd_index, value);
+
+        return (left != NULL) ? left : right;
+    }
+
+}   
+
+
+// offset the rank of the node in the AVL tree by the value specified by the offset parameter
+AVLNode * avl_offset(AVLNode * node, int offset) {
+    int cur_position = 0;
+
+    while(cur_position != offset) {
+        if (cur_position < offset && cur_position + avl_sub_tree_size(node->right) >= offset) {
+            // the target is inside the right subtree
+            node = node->right;
+            cur_position += avl_sub_tree_size(node->left) + 1;
+        } else if (cur_position > offset && cur_position - avl_sub_tree_size(node->left) <= offset) {
+            // the target is inside the left subtree
+            node = node->left;
+            cur_position -= avl_sub_tree_size(node->right) + 1;
+        } else {
+            // go to the parent
+            AVLNode * parent = node->parent;
+
+            if (!parent) {
+                // if the parent is null, then the node is the root, and the offset is out of bounds
+                return NULL;    
+            }
+
+            if (parent->left == node) {
+                // if the node is the left child of the parent
+                cur_position += avl_sub_tree_size(parent->right) + 1;
+            } else {
+                // if the node is the right child of the parent
+                cur_position -= avl_sub_tree_size(parent->left) + 1;
+            }
+
+            node = parent;
+        }
+
+
+    }
+
+    return node;
+}
+
 
 // free the tree
 void avl_free(AVLNode * tree) {

@@ -80,6 +80,39 @@ int process_server_response(int confd) {
             printf("(str) %.*s\n", message_size, buffer + 5);
             return 0;
             break;
+        case SER_INT:
+            // read the response message
+            err = read_tcp_socket(confd, buffer + 5, message_size);
+            if (err) {
+                if (err < 0) {
+                    perror("read failed");
+                } else {
+                    fprintf(stderr, "EOF reached before reading full message size\n");
+                }
+                return err;
+            }
+
+            int value = *(int *) (buffer + 5);
+            printf("(int) %d\n", value);
+            return 0;
+            break;
+        case SER_FLOAT:
+            // read the response message
+            err = read_tcp_socket(confd, buffer + 5, message_size);
+            if (err) {
+                if (err < 0) {
+                    perror("read failed");
+                } else {
+                    fprintf(stderr, "EOF reached before reading full message size\n");
+                }
+                return err;
+            }
+
+            float fvalue = *(float *) (buffer + 5);
+            printf("(float) %f\n", fvalue);
+            return 0;
+            break;
+
         case SER_ARR:
             printf("(arr) len = %d\n", message_size);
 
@@ -93,6 +126,7 @@ int process_server_response(int confd) {
 
             printf("(arr) end\n");
             return 0;
+            break;
 
         default:
             fprintf(stderr, "Unknown response type\n");

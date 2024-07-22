@@ -14,6 +14,31 @@ int hash(char * key) {
     return hash;
 }
 
+// initialize a single hash node
+HashNode *  hinit(char * key, ValueType type, void * value) {
+    HashNode * node = calloc(sizeof(HashNode), 1);
+
+    if (node == NULL) {
+        fprintf(stderr, "Memory allocation failed\n");
+        return NULL;
+    }
+    
+    node->key = key;
+    node->valueType = type;
+    node->value = value;    
+
+    return node;
+}
+
+// free a single hash node
+HashNode * hfree(HashNode * node) {
+    free(node->key);
+    free(node->value);
+    free(node);
+
+    return NULL;
+}
+
 // Creates a hashtable of the given size
 HashTable * hcreate(int size) {
     // check if the size is a power of 2, since we are using a mask to calculate the index (faster than modulo)
@@ -45,11 +70,14 @@ HashNode * hinsert(HashTable * table, HashNode * node) {
     // check if the table is full or if load factor is too high
     if ((table->size == table->mask + 1) || (table->size / (table->mask + 1) > table->loadFactor)) {
         
-        table->size == table -> mask + 1 ? printf("Table is full\n") : printf("Load factor is too high\n");
+        table->size == table -> mask + 1 ? printf("Table is full, resizing\n") : printf("Load factor is too high\n");
 
-        // resize the table
+        // replace old table with new table
         table = hresize(table);
-        hinsert(table, node);
+        if (table == NULL) {
+            fprintf(stderr, "Table resize has failed\n");
+            return NULL;
+        }
     }
 
     // calculate the index
@@ -69,6 +97,9 @@ HashNode * hinsert(HashTable * table, HashNode * node) {
 
     table->size++;
 
+    // update the load factor
+    table->loadFactor = (float) table->size / (table->mask + 1);
+
     return node;
 }
 
@@ -85,7 +116,7 @@ HashNode * hget(HashTable * table, char * key) {
     HashNode * traverseList = table->nodes[index];
 
     while (traverseList != NULL) {
-        // use lazy evaluation to potentiallyavoid the strcmp call
+        // use lazy evaluation to potentially avoid the strcmp call
         if (traverseList->hashCode == hashCode && strcmp(traverseList->key, key) == 0) {
             return traverseList;
         }
@@ -118,11 +149,7 @@ HashNode * hremove(HashTable * table, char * key) {
                 prev->next = traverseList->next;
             }
 
-            free(traverseList->key);
-            free(traverseList->value);
-            free(traverseList);
-
-            table->size--;
+          table->size--;
         
 
             // return the node that was removed, don't try to acess later will get segfault
@@ -162,12 +189,19 @@ HashTable * hresize(HashTable * table) {
         }
     }
 
-    // free the old table
+    // free the old nodes
     free(table->nodes);
-    free(table);
 
-    return newTable;
+    // copy the new table into the old table
+    table -> nodes = newTable -> nodes;
+    table->loadFactor = newTable->loadFactor;
+    table->size = newTable->size;
+    table -> mask = newTable -> mask;
 
+    // free old table
+    free(newTable);
+
+    return table;
 }
 
 //Print the hashtable
@@ -181,9 +215,11 @@ void hprint(HashTable * table) {
         while (traverseList != NULL) {
             // printf("Key: %s, Value: %s\n", traverseList->key, traverseList->value);
             if (traverseList->valueType == STRING) {
-                printf("Key: %s, Value: %s\n", traverseList->key, traverseList->value);
-            } else if (traverseList->valueType == INTEGER) {
-                printf("Key: %s, Value: %d\n", traverseList->key, *(int *)traverseList->value);
+                printf("Key: %s, Value: %s\n", traverseList->key, (char *)traverseList->value);
+            } else if (traverseList->valueType == FLOAT) {
+                printf("Key: %s, Value: %f\n", traverseList->key, *(float *)traverseList->value);
+            } else {
+                fprintf(stderr, "Value type not supported\n");
             }
 
             traverseList = traverseList->next;

@@ -21,19 +21,9 @@ ZSet * zset_init() {
     return zset;
 }
 
-// search for a value in the ZSet by key
-HashNode * zset_search_by_key(ZSet * zset, char * key) {
-    HashNode * hash_node = hget(zset->hash_table, key);
-    if (!hash_node) {
-        return NULL;
-    }
-
-    return hash_node;
-}
-
 
 // adds/updates a key in the ZSet
-void zset_add(ZSet * zset, char * key, float value) {
+int zset_add(ZSet * zset, char * key, float value) {
 
     HashNode * hash_node = hget(zset->hash_table, key);
 
@@ -43,8 +33,8 @@ void zset_add(ZSet * zset, char * key, float value) {
         // /deserialize the value from the hash node
         int type = hash_node->valueType;
         if (type != FLOAT) {
-            fprintf(stderr, "value in zset is not a float\n");
-            exit(EXIT_FAILURE);
+            fprintf(stderr, "value in zset is somehow not a float\n");
+            return -1;
         }
 
         float score = *(float *) hash_node->value;
@@ -55,24 +45,21 @@ void zset_add(ZSet * zset, char * key, float value) {
         zset->avl_tree = avl_delete(zset->avl_tree, hash_node->key, score);
     }
 
-    // create a new hash node
-    hash_node = (HashNode *) calloc(1, sizeof(HashNode));
-    if (hash_node == NULL) {
+    char * key_alloc = strdup(key);
+    if (key_alloc == NULL) {
         fprintf(stderr, "Memory allocation failed\n");
         exit(EXIT_FAILURE);
     }
 
-    hash_node->key = strdup(key);
-    hash_node->valueType = FLOAT;
-    hash_node->value = (char *) calloc(1, sizeof(float));
-    if (hash_node->value == NULL) {
+    float * value_alloc = (float *) calloc(1, sizeof(float));
+    if (value_alloc == NULL) {
         fprintf(stderr, "Memory allocation failed\n");
         exit(EXIT_FAILURE);
     }
 
-    // copy the value into the hash node
-    *(float *) hash_node->value = value;
-    printf("value: %f\n", *(float *)hash_node -> value);
+    *value_alloc = value;
+    
+    hash_node = hinit(key_alloc, FLOAT, value_alloc);
 
     // insert the hash node into the hash table
     hinsert(zset->hash_table, hash_node);
@@ -80,21 +67,22 @@ void zset_add(ZSet * zset, char * key, float value) {
     // insert the hash node into the AVL tree
     zset->avl_tree = avl_insert(zset->avl_tree, key, value);
 
+    return 0;
 }
 
 // remove a key from the ZSet
-void zset_remove(ZSet * zset, char * key) {
+int zset_remove(ZSet * zset, char * key) {
     HashNode * hash_node = hremove(zset->hash_table, key);
     if (!hash_node) {
         fprintf(stderr, "Key does not exist in the ZSet\n");
-        exit(EXIT_FAILURE);
+        return -1;
     }
 
     // deserialize the value from the hash node
     int type = hash_node->valueType;
     if (type != FLOAT) {
         fprintf(stderr, "value in zset is not a float\n");
-        exit(EXIT_FAILURE);
+        return -1;
     }
 
     float score = *(float *) hash_node->value;
@@ -102,6 +90,19 @@ void zset_remove(ZSet * zset, char * key) {
     // delete the hash node from the hash table and the AVL tree, delete the hash node from the avl_tree first since hash node frees the key
     zset->avl_tree = avl_delete(zset->avl_tree, key, score);
     hfree(hash_node);
+
+    return 0;
+}
+
+
+// search for a value in the ZSet by key
+HashNode * zset_search_by_key(ZSet * zset, char * key) {
+    HashNode * hash_node = hget(zset->hash_table, key);
+    if (!hash_node) {
+        return NULL;
+    }
+
+    return hash_node;
 }
 
 // print the ZSet
