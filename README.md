@@ -31,6 +31,18 @@ type | len_array | type_1 | len_1| element_1| type-2| len_2| element_2
 
 -*** Whoever allocates memory should be responsible for freeing it ***
 
+commands suported:
+get,set, del, keys: dealing with elements in the main hashtable
+
+Hashtable:
+
+Lists:
+
+
+Sorted Sets:
+-Zadd
+-Zrem
+-Zquery: includes zrangebyscore and zrank
 
 
 

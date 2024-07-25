@@ -615,7 +615,7 @@ char * zquery_cmd(Command * cmd) {
         return avl_iterate_response(zset->avl_tree, offset_node, limit);
 
     } else if (strcmp(element_key, "\"\"") == 0) {
-        // ! potential problem dealing with equal scores here
+        // ! potential problem dealing with equal scores here due to the fact that nodes with equal scores can be stored on the right and left based on AVL rotations
         // "" was passed as the key, perform a range query with score without name
         printf("Performing range query\n");
 
