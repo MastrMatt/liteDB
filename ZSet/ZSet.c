@@ -42,7 +42,8 @@ int zset_add(ZSet * zset, char * key, float value) {
         // delete the hash node from the hash table and the AVL tree
         hremove(zset->hash_table, key);
         hfree(hash_node);
-        zset->avl_tree = avl_delete(zset->avl_tree, hash_node->key, score);
+
+        zset->avl_tree = avl_delete(zset->avl_tree, key, score);
     }
 
     char * key_alloc = strdup(key);
@@ -104,6 +105,7 @@ HashNode * zset_search_by_key(ZSet * zset, char * key) {
 
     return hash_node;
 }
+
 
 // print the ZSet
 void zset_print(ZSet * zset) {

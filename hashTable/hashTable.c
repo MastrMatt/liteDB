@@ -23,6 +23,7 @@ HashNode *  hinit(char * key, ValueType type, void * value) {
         return NULL;
     }
     
+    // does not dupliate the key, caller is responsible for freeing the key
     node->key = key;
     node->valueType = type;
     node->value = value;    
@@ -152,7 +153,6 @@ HashNode * hremove(HashTable * table, char * key) {
           table->size--;
         
 
-            // return the node that was removed, don't try to acess later will get segfault
             return traverseList;
         }
 

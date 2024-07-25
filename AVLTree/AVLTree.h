@@ -27,6 +27,7 @@ AVLNode * avl_search_pair(AVLNode * tree, void * scnd_index, float value);
 AVLNode * avl_insert(AVLNode * tree, void * scnd_index, float value);
 AVLNode * avl_delete(AVLNode * tree,  void * scnd_index, float value);
 AVLNode * avl_offset(AVLNode * node, int offset);
+AVLNode * get_min_node(AVLNode * tree);
 void avl_free(AVLNode * tree);
 void avl_print(AVLNode * tree);
 

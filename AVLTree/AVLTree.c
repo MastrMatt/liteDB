@@ -85,7 +85,8 @@ AVLNode * avl_init(void * scnd_index, float value) {
     node->right = NULL;
     node->parent = NULL;
 
-    node->scnd_index = scnd_index;
+    // does not duplicate the string, so the caller must free the string
+    node->scnd_index = strdup(scnd_index);
     node->value = value;
 
     return node;
@@ -164,8 +165,9 @@ AVLNode * avl_delete(AVLNode * tree,void * scnd_index, float value) {
             if (temp != NULL) {
                 temp->parent = tree->parent;
             }
-            
+
             // free the node
+            free(tree->scnd_index);
             free(tree);
             return temp;
         } else if (tree->right == NULL) {
@@ -177,23 +179,27 @@ AVLNode * avl_delete(AVLNode * tree,void * scnd_index, float value) {
             }
 
             // free the node
+            free(tree->scnd_index);
             free(tree);
             return temp;
         } else {
             // need to find the inorder successor
             AVLNode * temp = get_min_node(tree->right);
 
+            // free the secondary index of the current node
+            free(tree->scnd_index);
+
             // copy the value and scnd_index of the inorder successor
             tree->value = temp->value;
-            tree->scnd_index = temp->scnd_index;
+            tree->scnd_index = strdup((char *) temp->scnd_index);
+
 
             // delete the inorder successor
             tree->right = avl_delete(tree->right, temp->scnd_index, temp->value);
         }
     } else {
-        // keep searching for the node to delete
-        tree->left = avl_delete(tree->left, scnd_index, value);
         tree->right = avl_delete(tree->right, scnd_index, value);
+        tree->left = avl_delete(tree->left, scnd_index, value);
     }
 
     // update the height and sub_tree_size of the current node
@@ -264,7 +270,6 @@ AVLNode * avl_search_pair(AVLNode * tree, void * scnd_index, float value) {
 
 }   
 
-
 // offset the rank of the node in the AVL tree by the value specified by the offset parameter
 AVLNode * avl_offset(AVLNode * node, int offset) {
     int cur_position = 0;
@@ -289,10 +294,10 @@ AVLNode * avl_offset(AVLNode * node, int offset) {
 
             if (parent->left == node) {
                 // if the node is the left child of the parent
-                cur_position += avl_sub_tree_size(parent->right) + 1;
+                cur_position += avl_sub_tree_size(node->right) + 1;
             } else {
                 // if the node is the right child of the parent
-                cur_position -= avl_sub_tree_size(parent->left) + 1;
+                cur_position -= avl_sub_tree_size(node->left) + 1;
             }
 
             node = parent;
@@ -314,6 +319,7 @@ void avl_free(AVLNode * tree) {
     avl_free(tree->left);
     avl_free(tree->right);
 
+    free(tree->scnd_index);
     free(tree);
 }
 
@@ -325,7 +331,7 @@ void avl_print(AVLNode * tree) {
     }
 
     avl_print(tree->left);
-    printf("value: %f , balance: %d , snd_index: %p \n", tree->value , avl_balance(tree), tree->scnd_index);
+    printf("value: %f , balance: %d , snd_index: %s \n", tree->value , avl_balance(tree), (char *) tree->scnd_index);
     avl_print(tree->right);
 }
 

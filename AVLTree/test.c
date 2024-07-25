@@ -12,87 +12,121 @@ int compare_scnd_index(void * scnd_index1, void * scnd_index2) {
 
 
 int main() {
-    char * test_string = "test";
-    char * test_string2 = "test2";
+    char * strings [10];
+
+    // dynamically allocate memory for the strings, may cause mem leak if avl function duplicates the string
+    for (int i = 0; i < 10; i++) {
+        strings[i] = (char *) malloc(10 * sizeof(char));
+        sprintf(strings[i], "test%d", i);
+    }
+
     // test init
-    AVLNode * tree = avl_init(test_string, 0);
+    AVLNode * tree = avl_init(strings[0], 0);
 
     // test insert
-    tree = avl_insert(tree, test_string, 1);
-    tree = avl_insert(tree, test_string, 2);
-    tree = avl_insert(tree, test_string, 3);
-    tree = avl_insert(tree, test_string, 4);
-    tree = avl_insert(tree, test_string, -1);
-    tree = avl_insert(tree, test_string, -2);
-    tree = avl_insert(tree, test_string, -3);
-    tree = avl_insert(tree, test_string2, -3);
-    tree = avl_insert(tree, test_string, -4);
+    tree = avl_insert(tree, strings[1], 1);
+    tree = avl_insert(tree, strings[2], 2);
+    tree = avl_insert(tree, strings[3], 3);
+    tree = avl_insert(tree, strings[4], 4);
+    tree = avl_insert(tree, strings[5], -1);
+    tree = avl_insert(tree, strings[6], -2);
+    tree = avl_insert(tree, strings[7], -3);
+    tree = avl_insert(tree, strings[8], -3);
+    tree = avl_insert(tree, strings[9], -4);
+
 
     // test search by pair
-    AVLNode * pair1 = avl_search_pair(tree, test_string, -3);
-    AVLNode * pair2 = avl_search_pair(tree, test_string2, -3);
+    AVLNode * pair1 = avl_search_pair(tree, strings[7], -3);
+    AVLNode * pair2 = avl_search_pair(tree, strings[8], -3);
 
-    if (strcmp(pair1->scnd_index, test_string) != 0 || pair1->value != -3) {
-        printf("Search by pair failed, fetched wrong node\n");
-        exit(EXIT_FAILURE);
-    }
-
-    if (strcmp(pair2->scnd_index, test_string2) != 0 || pair2->value != -3) {
-        printf("Search by pair failed, fetched wrong node\n");
-        exit(EXIT_FAILURE);
-    }
-
+    
     if (!pair1 || !pair2) {
         printf("Search by pair failed, did not fetch a node\n");
+        exit(EXIT_FAILURE);
+    }
+
+
+    if (strcmp(pair1->scnd_index, strings[7]) != 0 || pair1->value != -3) {
+        printf("Search by pair failed, fetched wrong node\n");
+        exit(EXIT_FAILURE);
+    }
+
+    if (strcmp(pair2->scnd_index, strings[8]) != 0 || pair2->value != -3) {
+        printf("Search by pair failed, fetched wrong node\n");
         exit(EXIT_FAILURE);
     }
 
     // test search
     AVLNode * node = avl_search_float(tree, 3);
     if (!node) {
-        printf("Search failed\n");
+        printf("Search for 3 failed\n");
         exit(EXIT_FAILURE);
     } 
 
     AVLNode * node2 = avl_search_float(tree, -4);
     if (!node2) {
-        printf("Search failed\n");
+        printf("Search for -4 failed\n");
         exit(EXIT_FAILURE);
     }   
 
     // test delete
     tree = avl_delete(tree, node->scnd_index, node->value);
+
     tree = avl_delete(tree, node2->scnd_index, node2->value);
+
+
     if (avl_search_float(tree, 3) || avl_search_float(tree, -4)) {
         printf("Delete failed\n");
         exit(EXIT_FAILURE);
     }
 
     // deleting nodes with same score but different secondary index
-    AVLNode * node4 = avl_init("node4", 3);
-    AVLNode * node5 = avl_init("node5", 3);
+    AVLNode * node4 = avl_search_pair(tree, strings[7], -3);
+    AVLNode * node5 = avl_search_pair(tree, strings[8], -3);
 
-    tree = avl_insert(tree, node5->scnd_index, node5->value);
-    tree = avl_insert(tree, node4->scnd_index, node4->value);
-
-    // test delete
-    tree = avl_delete(tree, node4->scnd_index, node4->value);
-
-    printf("----------------\n");
-    avl_print(tree);
-    printf("----------------\n");
-
-    tree = avl_delete(tree, node5->scnd_index, node5->value);
-
-    printf("----------------\n");
-    avl_print(tree);
-    printf("----------------\n");
-
-    if (avl_search_float(tree, 3)) {
-        printf("Delete failed\n");
+    if (!node4 || !node5) {
+        printf("Search by pair failed for -3 and -3\n");
         exit(EXIT_FAILURE);
     }
     
+    // test delete
+    tree = avl_delete(tree, node4->scnd_index, node4->value);
+    tree = avl_delete(tree, node5->scnd_index, node5->value);
+
+    if (avl_search_float(tree, -3)) {
+        printf("Delete failed\n");
+        exit(EXIT_FAILURE);
+    }
+
+    // time to test offset
+    AVLNode * new_tree = avl_init("test", 0);
+    new_tree = avl_insert(new_tree, "test", 1);
+    new_tree = avl_insert(new_tree, "test", 2);
+    new_tree = avl_insert(new_tree, "test", -1);
+    new_tree = avl_insert(new_tree, "test", -2);
+
+
+    AVLNode * offset_node = avl_offset(new_tree, 1);
+    
+    if (offset_node->value != 2) {
+        printf("Offset failed\n");
+        exit(EXIT_FAILURE);
+    }
+
+    AVLNode * origin_node = avl_search_float(new_tree, 0);
+    if (origin_node->value != 0) {
+        printf("AVL search failed\n");
+        exit(EXIT_FAILURE);
+    }
+
+    offset_node = avl_offset(origin_node, 1);
+    // make sure 1 is the node that was fetched from the offset
+    if (offset_node->value != 1) {
+        printf("Offset failed\n");
+        exit(EXIT_FAILURE);
+    }
+    
+
     // passed all tests
     printf("All tests passed\n");
 

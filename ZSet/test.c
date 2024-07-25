@@ -37,6 +37,6 @@ int main () {
     // All tests passed
     printf("All tests passed\n");
 
-    // zset_print(zset);
+    zset_print(zset);
 }
 

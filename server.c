@@ -459,14 +459,75 @@ char * zscore_cmd(Command * cmd) {
     return get_response(response_type, &score);
 }
 
+
+char * avl_iterate_response(AVLNode * tree, AVLNode * start, long limit) {
+    int num_elements = 0;
+    int inc_buffer = 5;
+
+    // buffer for the data
+    char * buffer = calloc(1 + 4 + MAX_MESSAGE_SIZE, sizeof(char));
+
+    // iterate through the AVL tree and write the key and score to the buffer
+    AVLNode * current = start;
+    while (current != NULL && (num_elements/2 < limit) ) {
+        // write the key to the buffer
+        int type = SER_STR;
+        int key_len = strlen((char *)current->scnd_index);
+
+        // check if the buffer has enough space to write the key
+        if (inc_buffer + 5 + key_len > MAX_MESSAGE_SIZE) {
+                fprintf(stderr, "Failed to reallocate memory for zquery response\n");
+                exit(EXIT_FAILURE);
+        }
+
+        // write the type and length of the response, 1 byte
+        memcpy(buffer + inc_buffer, &type, 1);
+        memcpy(buffer + inc_buffer + 1, &key_len, 4);
+
+        // write the key
+        memcpy(buffer + inc_buffer + 5, current->scnd_index, key_len);
+
+        inc_buffer += 5 + key_len;
+        num_elements++;
+
+        // now write the score
+        type = SER_FLOAT;
+        int score_len = sizeof(float);
+
+        // check if the buffer has enough space to write the score
+        if (inc_buffer + 5 + score_len > MAX_MESSAGE_SIZE) {
+                fprintf(stderr, "Failed to reallocate memory for zquery response\n");
+                exit(EXIT_FAILURE);
+        }
+
+        // write the type and length of the response, 1 byte
+        memcpy(buffer + inc_buffer, &type, 1);
+        memcpy(buffer + inc_buffer + 1, &score_len, 4);
+
+        // write the score
+        memcpy(buffer + inc_buffer + 5, &current->value, score_len);
+
+        inc_buffer += 5 + score_len;
+        num_elements++;
+
+        // go to next ranked node
+        current = avl_offset(current, 1);
+    }
+
+    // write the type and length of array to buffer
+    int type = SER_ARR;
+    memcpy(buffer, &type, 1);
+    memcpy(buffer + 1, &num_elements, 4);
+
+    return buffer;
+}
+
 // zquery key score name offset limit
 char * zquery_cmd(Command * cmd) {
     errno = 0;
 
-    SerialType response_type = SER_ARR;
-
     if (cmd->num_args < 5) {
-        return error_response("zquery command requires at least 3 arguments (key, score, name, offset, limit)");
+        return error_response("zquery command requires at least 5 arguments (key, score, name, offset, limit)");
     }
 
     char * zset_key = cmd->args[0];
@@ -476,13 +537,13 @@ char * zquery_cmd(Command * cmd) {
     char * limit_str = cmd->args[4];
 
     float score;
-    long offset;
-    long limit;
+    int offset;
+    int limit;
 
     // convert the score to a float
     // use strtol and duck typing to determine the type of the value
     char *endptr;
-    float score = strtof(score_str, &endptr);
+    score = strtof(score_str, &endptr);
 
     // check errors
     if (errno) {
@@ -495,8 +556,8 @@ char * zquery_cmd(Command * cmd) {
         return error_response("Failed to convert score to float");
     }
 
-    // convert the offset to a long
-    offset = strtol(offset_str, &endptr, 10);
+    // convert the offset to an integer
+    offset = (int) strtol(offset_str, &endptr, 10);
 
     // check errors
     if (errno) {
@@ -504,13 +565,13 @@ char * zquery_cmd(Command * cmd) {
         exit(EXIT_FAILURE);
     }
 
-    // Check if successfully converted to a long
+    // Check if successfully converted to an integer
     if (!(*endptr == '\0') || !(endptr != offset_str)) {
         return error_response("Failed to convert offset to integer");
     }
 
-    // convert the limit to a long
-    limit = strtol(limit_str, &endptr, 10);
+    // convert the limit to an integer
+    limit = (int) strtol(limit_str, &endptr, 10);
 
     // check errors
     if (errno) {
@@ -518,7 +579,7 @@ char * zquery_cmd(Command * cmd) {
         exit(EXIT_FAILURE);
     }
 
-    // Check if successfully converted to a long  
+    // Check if successfully converted to an integer
     if (!(*endptr == '\0') || !(endptr != limit_str)) {
         return error_response("Failed to convert limit to integer");
     }
@@ -536,16 +597,60 @@ char * zquery_cmd(Command * cmd) {
 
     ZSet * zset = (ZSet *) fetched_node->value;
 
+   
+   if ((isinf(score) == -1) && (strcmp(element_key, "\"\"") == 0)){
+        // "" was passed as the key and -inf was passed as the score, perform a rank query
+        printf("Performing rank query\n");
 
-    if (strcmp(element_key, "") == 0) {
-        // perform a range query
+        // find the element with smallest rank
+        AVLNode * origin_node = get_min_node(zset->avl_tree);
 
-    } else if (score == -INFINITY) {
-        
+        if (!origin_node) {
+            return error_response("Element not in zset");
+        }
 
+        // offset the rank of the node in the AVL tree by the value specified by the offset parameter
+        AVLNode * offset_node = avl_offset(origin_node, offset);
+
+        return avl_iterate_response(zset->avl_tree, offset_node, limit);
+
+    } else if (strcmp(element_key, "\"\"") == 0) {
+        // ! potential problem dealing with equal scores here
+        // "" was passed as the key, perform a range query with score without name
+        printf("Performing range query\n");
+
+
+        // find the element in the ZSET using AVL tree
+        AVLNode * origin_node = avl_search_float(zset->avl_tree, score);
+
+        if (!origin_node) {
+            return error_response("Element not in zset");
+        }
+
+        // offset the rank of the node in the AVL tree by the value specified by the offset parameter
+        AVLNode * offset_node = avl_offset(origin_node, offset);
+
+        return avl_iterate_response(zset->avl_tree, offset_node, limit);
+    } else {
+        // perform a query for the specific element
+
+        // find the element in the ZSET using AVL tree
+        AVLNode * origin_node = avl_search_pair(zset->avl_tree, element_key, score);
+
+        if (!origin_node) {
+            return error_response("Element not in zset");
+        }
+
+        // offset the rank of the node in the AVL tree by the value specified by the offset parameter
+        AVLNode * offset_node = avl_offset(origin_node, offset);
+
+        return avl_iterate_response(zset->avl_tree, offset_node, limit);
     }
+
         
 }
+
+
 
 
 
@@ -581,7 +686,7 @@ char * execute_command(Command * cmd) {
         return zscore_cmd(cmd); 
     }
     else if (strcmp(cmd->name, "zquery") == 0) {
-        return error_response("zquery command not supported");
+        return zquery_cmd(cmd);
     }
     else {
         return error_response("Unknown command");
