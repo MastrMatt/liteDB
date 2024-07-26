@@ -25,6 +25,7 @@ int list_linsert(List * list, void * data, NodeType type) {
     // edit Node
     if (type == NODE_TYPE_STRING) {
         new_node->data = strdup((char *) data);
+        new_node->type = NODE_TYPE_STRING;
     } else if (type == NODE_TYPE_FLOAT) {
         new_node->data = calloc(1,sizeof(float));
         if (new_node->data == NULL) {
@@ -33,6 +34,7 @@ int list_linsert(List * list, void * data, NodeType type) {
         }
 
         *(float *) new_node->data = *(float *) data;
+        new_node->type = NODE_TYPE_FLOAT;
 
     } else {
         fprintf(stderr, "Invalid type\n");
@@ -69,6 +71,7 @@ int list_rinsert(List * list, void * data, NodeType type) {
     // edit Node
     if (type == NODE_TYPE_STRING) {
         new_node->data = strdup((char *) data);
+        new_node->type = NODE_TYPE_STRING;
     } else if (type == NODE_TYPE_FLOAT) {
         new_node->data = calloc(1,sizeof(float));
         if (new_node->data == NULL) {
@@ -77,6 +80,7 @@ int list_rinsert(List * list, void * data, NodeType type) {
         }
 
         *(float *) new_node->data = *(float *) data;
+        new_node->type = NODE_TYPE_FLOAT;
 
     } else {
         fprintf(stderr, "Invalid type\n");
@@ -230,6 +234,19 @@ List * list_trim(List * list, int start, int end) {
 }
 
 
+List * list_print(List * list) {
+    ListNode * traverse = list->head;
+    while (traverse) {
+        if (traverse->type == NODE_TYPE_STRING) {
+            printf("%s\n", (char *) traverse->data);
+        } else if (traverse->type == NODE_TYPE_FLOAT) {
+            printf("%f\n", *(float *) traverse->data);
+        }
+        traverse = traverse->next;
+    }
+
+    return list;
+}
 
 
 
