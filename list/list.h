@@ -6,16 +6,32 @@ typedef enum NodeType {
     NODE_TYPE_STRING
 } NodeType;
 
-typedef struct ListNode{
+typedef struct ListNode {
     void * data;
     NodeType type;
     
-    struct Node *prev;
-    struct Node *next;
+    ListNode * prev;
+    ListNode * next;
 } ListNode;
 
 typedef struct List{
-    Node *head;
-    Node *tail;
+    ListNode *head;
+    ListNode *tail;
     int size;
 } List;
+
+
+List * list_init();
+
+int list_linsert(List * list, void * data, NodeType type);
+int list_rinsert(List * list, void * data, NodeType type);
+int list_lremove(List * list);
+int list_rremove(List * list);
+
+int list_imodify(List * list, int index, void * data, NodeType type);
+ListNode * list_iget(List * list, int index);
+List * list_trim(List * list, int start, int end);
+
+
+
+

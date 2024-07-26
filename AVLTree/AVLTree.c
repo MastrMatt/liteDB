@@ -76,7 +76,7 @@ AVLNode * avl_init(void * scnd_index, float value) {
     AVLNode * node = (AVLNode *) calloc(1, sizeof(AVLNode));
     if (node == NULL) {
         fprintf(stderr, "Memory allocation failed\n");
-        return NULL;
+        exit(EXIT_FAILURE);
     }
 
     node->height = 1;

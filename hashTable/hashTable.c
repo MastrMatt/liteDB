@@ -20,7 +20,7 @@ HashNode *  hinit(char * key, ValueType type, void * value) {
 
     if (node == NULL) {
         fprintf(stderr, "Memory allocation failed\n");
-        return NULL;
+        exit(EXIT_FAILURE);
     }
     
     // does not dupliate the key, caller is responsible for freeing the key
@@ -50,13 +50,13 @@ HashTable * hcreate(int size) {
     HashTable * table = calloc(sizeof(HashTable), 1);
     if (table == NULL) {
         fprintf(stderr, "Memory allocation failed\n");
-        return NULL;
+        exit(EXIT_FAILURE);
     }
 
     table->nodes = calloc(sizeof(HashNode *), size);
     if (table->nodes == NULL) {
         fprintf(stderr, "Memory allocation failed\n");
-        return NULL;
+        exit(EXIT_FAILURE);
     }
     
     table->size = 0;

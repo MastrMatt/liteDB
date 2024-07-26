@@ -4,7 +4,6 @@
 
 -Server is ran on a little endian machine
 
-
 -Client will send a command of the regular communication protocol:
 len(4 bytes): little endian integer representing the length of the msg
 msg: the cmd string to be executed, args seperated by spaces
@@ -31,18 +30,34 @@ type | len_array | type_1 | len_1| element_1| type-2| len_2| element_2
 
 -*** Whoever allocates memory should be responsible for freeing it ***
 
-commands suported:
-get,set, del, keys: dealing with elements in the main hashtable
+
+Commands currently suported:
+
+Dealing with elements in the main hashtable:
+-GET
+-SET
+-DEL
+-KEYS
 
 Hashtable:
+-HSET
+-HGET
+-HDEL
+-HGETALL  
 
 Lists:
-
+-LPUSH, RPUSH
+-LPOP, RPOP
+-LLEN
+-LRANGE
+-LTRIM
+-LSET
 
 Sorted Sets:
--Zadd
--Zrem
--Zquery: includes zrangebyscore and zrank
+-ZADD
+-ZREM
+-ZSCORE
+-ZQUERY: includes zrangebyscore and zrank
 
 
 

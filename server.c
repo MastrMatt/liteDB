@@ -657,35 +657,35 @@ char * zquery_cmd(Command * cmd) {
 
 // execute the command and return the server response string
 char * execute_command(Command * cmd) {
-    if (strcmp(cmd->name, "get") == 0) {
+    if (strcmp(cmd->name, "GET") == 0) {
 
         return get_command(cmd);
 
-    } else if (strcmp(cmd->name, "set") == 0) {
+    } else if (strcmp(cmd->name, "SET") == 0) {
 
         return set_command(cmd);
 
-    } else if (strcmp(cmd->name, "del") == 0) {
+    } else if (strcmp(cmd->name, "DEL") == 0) {
 
        return del_command(cmd);
        
-    } else if (strcmp(cmd->name, "keys") == 0) {
+    } else if (strcmp(cmd->name, "KEYS") == 0) {
 
         return keys_command();
 
-    } else if (strcmp(cmd->name, "zadd")== 0) {
+    } else if (strcmp(cmd->name, "ZADD")== 0) {
             
         return zadd_command(cmd);
 
-    } else if (strcmp(cmd->name, "zrem") == 0) {
+    } else if (strcmp(cmd->name, "ZREM") == 0) {
             
         return zrem_command(cmd);
 
-    } else if (strcmp(cmd->name, "zscore") == 0) {
+    } else if (strcmp(cmd->name, "ZSCORE") == 0) {
 
         return zscore_cmd(cmd); 
     }
-    else if (strcmp(cmd->name, "zquery") == 0) {
+    else if (strcmp(cmd->name, "ZQUERY") == 0) {
         return zquery_cmd(cmd);
     }
     else {
