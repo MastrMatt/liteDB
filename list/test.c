@@ -42,15 +42,29 @@ int main () {
         printf("Test 4 failed\n");
     }
 
+    // test list_imodify
+    list_imodify(list, 0, test_strings[3], NODE_TYPE_STRING);
+    ListNode * test7 = list_iget(list, 0);
+    if (strcmp((char *) test7->data, test_strings[3]) != 0) {
+        printf("Test 5 failed\n");
+    }
 
-    // ! Finish rest of tests
+    // test list_trim
+    list_imodify(list, 0, test_strings[0], NODE_TYPE_STRING);
+    list_imodify(list, 1, test_strings[1], NODE_TYPE_STRING);
+    list_rinsert(list, test_strings[2], NODE_TYPE_STRING);
+    list_rinsert(list, test_strings[3], NODE_TYPE_STRING);
 
-    printf("----------------\n");
-    list_print(list);
-    printf("----------------\n");
+    // trim from 1 to 2
+    list_trim(list, 1, 2);
+
+    ListNode * test8 = list_iget(list, 0);
+    ListNode * test9 = list_iget(list, 1);
 
 
-    printf("Size of list: %d\n", list->size);
+    if ((strcmp((char *) test8->data, test_strings[1]) != 0) || (strcmp((char *) test9->data, test_strings[2]) != 0) || list->size != 2) {
+        printf("Test 6 failed\n");
+    }
+
     printf("All tests passed\n");
-
 }

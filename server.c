@@ -209,6 +209,7 @@ char * get_command(Command * cmd) {
     return get_response(type,value);
 }
 
+// returns null response for the set command
 char * set_command(Command * cmd) {
     
     // obtain type of the value
@@ -231,6 +232,7 @@ char * set_command(Command * cmd) {
     return null_response();
 }
 
+// returns a string response representing the number of elements removed
 char * del_command(Command * cmd) {
 
     if (cmd->num_args != 1) {
@@ -327,7 +329,7 @@ char * zadd_command(Command * cmd) {
     }
 
     // Check if successfully converted to a float
-    if (!(*endptr == '\0') || !(endptr != score_str)) {
+    if (!(*endptr == '\0') || (endptr == score_str)) {
         return error_response("Failed to convert score to float");
     } 
 
@@ -416,6 +418,7 @@ char * zrem_command(Command * cmd) {
 }
 
 // zscore key name
+// 
 char * zscore_cmd(Command * cmd) {
     errno = 0;
 
@@ -552,7 +555,7 @@ char * zquery_cmd(Command * cmd) {
     }
 
     // Check if successfully converted to a float
-    if (!(*endptr == '\0') || !(endptr != score_str)) {
+    if (!(*endptr == '\0') || (endptr == score_str)) {
         return error_response("Failed to convert score to float");
     }
 
@@ -566,7 +569,7 @@ char * zquery_cmd(Command * cmd) {
     }
 
     // Check if successfully converted to an integer
-    if (!(*endptr == '\0') || !(endptr != offset_str)) {
+    if (!(*endptr == '\0') || (endptr == offset_str)) {
         return error_response("Failed to convert offset to integer");
     }
 
@@ -650,9 +653,663 @@ char * zquery_cmd(Command * cmd) {
         
 }
 
+// hashtable only store strings in this db
+// returns a string response representing the number of elements added/updated
+char * hset_command(Command * cmd) {
+
+    ValueType response_type = INTEGER;
+    int elem_added = 0;
+
+    if (cmd->num_args < 3) {
+        return error_response("hset command requires at least 3 arguments (key, field, value)");
+    }
+
+    char * global_table_key = cmd->args[0];
+    char * field_key = cmd->args[1];
+    char * value = cmd->args[2];
+
+    // fetch the hashtable from the global table
+    HashTable * cur_table;
+
+    HashNode * fetched_node = hget(global_table, global_table_key);
+    if (!fetched_node) {
+        // create a new hashtable
+        HashTable * new_hash_table = hcreate(INIT_TABLE_SIZE);
+
+        // insert the new hashtable into the global table
+        HashNode * new_node = hinit(strdup(global_table_key), HASHTABLE, new_hash_table);
+
+        HashNode * ret = hinsert(global_table, new_node);
+        if (!ret) {
+            return error_response("Failed to insert new hash table into global table");
+        }
+
+        cur_table = new_hash_table;
+
+    } else {
+        // check if the value is a hashtable
+        if (fetched_node->valueType != HASHTABLE) {
+            return error_response("key is not for a hashtable");
+        }
+
+        cur_table = (HashTable *) fetched_node->value;
+    }
+
+    // add the value to the hashtable
+    HashNode * new_node = hinit(strdup(field_key), STRING, strdup(value));
+    if (!new_node) {
+        return error_response("Failed to create new node for hashtable");
+    }
+
+    // if it already exists, remove the old value
+    HashNode * old_node = hremove(cur_table, field_key);
+    if (old_node) {
+        hfree(old_node);
+    }
+
+    HashNode * ret = hinsert(cur_table, new_node);
+    if (!ret) {
+        return error_response("Failed to insert new node into hashtable");
+    }
+
+    elem_added++;
+
+    return get_response(response_type, &elem_added);
+}
+
+// returns a string response for the hget command
+char * hget_command(Command * cmd) {
+    if (cmd->num_args < 2) {
+        return error_response("hget command requires at least 2 arguments (key, field)");
+    }
+
+    char * global_table_key = cmd->args[0];
+    char * field_key = cmd->args[1];
+
+    // fetch the hashtable from the global table
+    HashNode * fetched_node = hget(global_table, global_table_key);
+    if (!fetched_node) {
+        return error_response("key not in database");
+    }
+
+    // check if the value is a hashtable
+    if (fetched_node->valueType != HASHTABLE) {
+        return error_response("key is not for a hashtable");
+    }
+
+    HashTable * cur_table = (HashTable *) fetched_node->value;
+
+    // fetch the value from the hashtable
+    HashNode * ret_node = hget(cur_table, field_key);
+    if (!ret_node) {
+        return error_response("field not in hashtable");
+    }
+
+    return get_response(ret_node->valueType, ret_node->value);
+}
+
+// returns an integer response representing the number of elements removed
+char * hdel_command(Command * cmd) {
+
+    ValueType response_type = INTEGER;
+    int elem_removed = 0;
+
+    if (cmd->num_args < 2) {
+        return error_response("hdel command requires at least 2 arguments (key, field)");
+    }
+
+    char * global_table_key = cmd->args[0];
+    char * field_key = cmd->args[1];
+
+    // fetch the hashtable from the global table
+    HashNode * fetched_node = hget(global_table, global_table_key);
+    if (!fetched_node) {
+        return error_response("key not in database");
+    }
+
+    // check if the value is a hashtable
+    if (fetched_node->valueType != HASHTABLE) {
+        return error_response("key is not for a hashtable");
+    }
+
+    HashTable * cur_table = (HashTable *) fetched_node->value;
+
+    // remove the value from the hashtable
+    HashNode * removed_node = hremove(cur_table, field_key);
+    if (!removed_node) {
+        return error_response("Failed to remove value from hashtable");
+    }
+
+    // free the removed node
+    hfree(removed_node);
+
+    elem_removed++;
+
+    return get_response(response_type, &elem_removed);
+}
+
+// returns a protocol string, which contains an array of all the keys and values in the hash table
+char * hgetall_command(Command * cmd) {
+    if (cmd->num_args < 1) {
+        return error_response("hgetall command requires at least 1 argument (key)");
+    }
+
+    char * global_table_key = cmd->args[0];
+
+    // fetch the hashtable from the global table
+    HashNode * fetched_node = hget(global_table, global_table_key);
+    if (!fetched_node) {
+        return error_response("key not in database");
+    }
+
+    // check if the value is a hashtable
+    if (fetched_node->valueType != HASHTABLE) {
+        return error_response("key is not for a hashtable");
+    }
+
+    HashTable * cur_table = (HashTable *) fetched_node->value;
+
+    // get all the keys in the hashtable
+    int num_elem = 0;
+    int inc_buffer = 5;
+
+    // buffer for the data
+    char * buffer = calloc(1 + 4 + MAX_MESSAGE_SIZE, sizeof(char));
+
+    // iterate through the hash table and write the keys to the buffer
+    for (int i = 0; i <= cur_table->mask; i++) {
+        HashNode * traverseList = cur_table->nodes[i];
+
+        while (traverseList != NULL) {
+            // write the key to the buffer
+            int type = SER_STR;
+            int key_len = strlen(traverseList->key);
+
+            // check if the buffer has enough space to write the key
+            if (inc_buffer + 5 + key_len > MAX_MESSAGE_SIZE) {
+                    fprintf(stderr, "Failed to reallocate memory for hgetall response\n");
+                    exit(EXIT_FAILURE);
+            }
+
+            // write the type and length of the response, 1 byte
+            memcpy(buffer + inc_buffer, &type, 1);
+            memcpy(buffer + inc_buffer + 1, &key_len, 4);
+
+            // write the key
+            memcpy(buffer + inc_buffer + 5, traverseList->key, key_len);
+
+            inc_buffer += 5 + key_len;
+            num_elem++;
+
+            // write the value to the buffer
+            type = SER_STR;
+            int value_len = strlen(traverseList->value);
+
+            // check if the buffer has enough space to write the value
+            if (inc_buffer + 5 + value_len > MAX_MESSAGE_SIZE) {
+                    fprintf(stderr, "Failed to reallocate memory for hgetall response\n");
+                    exit(EXIT_FAILURE);
+            }
+
+            // write the type and length of the response, 1 byte
+            memcpy(buffer + inc_buffer, &type, 1);
+            memcpy(buffer + inc_buffer + 1, &value_len, 4);
+
+            // write the value
+            memcpy(buffer + inc_buffer + 5, traverseList->value, value_len);
+
+            inc_buffer += 5 + value_len;
+            num_elem++;
+
+            traverseList = traverseList->next;
+        }
+    }
+
+    // write the type and length of array to buffer
+    int type = SER_ARR;
+    memcpy(buffer, &type, 1);
+    memcpy(buffer + 1, &num_elem, 4);
+
+    return buffer;
+}
+
+// returns an integer response representing the number of elements added
+char * lpush_command(Command * cmd) {
+    ValueType response_type = INTEGER;
+    int elem_added = 0;
+
+    if (cmd->num_args < 2) {
+        return error_response("lpush command requires at least 2 arguments (key, value)");
+    }
+    
+    char * global_table_key = cmd->args[0];
+    char * value = cmd->args[1];
+
+    // fetch the list from the global table
+    HashNode * fetched_node = hget(global_table, global_table_key);
+    if (!fetched_node) {
+        // create a new list
+        List * new_list = list_init();
+
+        // create a new hash node
+        HashNode * new_node = hinit(strdup(global_table_key), LIST, new_list);
+
+        HashNode * ret = hinsert(global_table, new_node);
+        if (!ret) {
+            return error_response("Failed to insert new list into global table");
+        }
+
+        fetched_node = new_node;
+    }
+
+    // check if the value is a list
+    if (fetched_node->valueType != LIST) {
+        return error_response("key is not for a list");
+    }
+
+    List * list = (List *) fetched_node->value;
+
+    // add the value to the list
+    int ret = list_linsert(list, value, STRING);
+    if (ret) {
+        return error_response("Failed to add value to list");
+    }
+    elem_added++;
+
+    return get_response(response_type, &elem_added);
+}
+
+// returns an integer response representing the number of elements added
+char * rpush_command(Command * cmd) {
+    ValueType response_type = INTEGER;
+    int elem_added = 0;
+
+    if (cmd->num_args < 2) {
+        return error_response("rpush command requires at least 2 arguments (key, value)");
+    }
+    
+    char * global_table_key = cmd->args[0];
+    char * value = cmd->args[1];
+
+    // fetch the list from the global table
+    HashNode * fetched_node = hget(global_table, global_table_key);
+    if (!fetched_node) {
+        // create a new list
+        List * new_list = list_init();
+
+        // create a new hash node
+        HashNode * new_node = hinit(strdup(global_table_key), LIST, new_list);
+
+        HashNode * ret = hinsert(global_table, new_node);
+        if (!ret) {
+            return error_response("Failed to insert new list into global table");
+        }
+
+        fetched_node = new_node;
+    }
+
+    // check if the value is a list
+    if (fetched_node->valueType != LIST) {
+        return error_response("key is not for a list");
+    }
+
+    List * list = (List *) fetched_node->value;
+
+    // add the value to the list
+    int ret = list_rinsert(list, value, STRING);
+    if (ret) {
+        return error_response("Failed to add value to list");
+    }
+    elem_added++;
+
+    return get_response(response_type, &elem_added);
+}
+
+// returns an integer response representing the number of elements removed
+char * lpop_command(Command * cmd) {
+
+    int elem_removed;
+
+    if (cmd->num_args < 1) {
+        return error_response("lpop command requires at least 1 argument (key)");
+    }
+
+    char * global_table_key = cmd->args[0];
+
+    // fetch the list from the global table
+    HashNode * fetched_node = hget(global_table, global_table_key);
+    if (!fetched_node) {
+        return error_response("key not in database");
+    }
+
+    // check if the value is a list
+    if (fetched_node->valueType != LIST) {
+        return error_response("key is not for a list");
+    }
+
+    List * list = (List *) fetched_node->value;
+
+    // remove the value from the list
+    int ret = list_lremove(list);
+    if (ret) {
+        return error_response("Failed to remove value from list");
+    }
+
+    elem_removed++;
+
+    return get_response(INTEGER, &elem_removed);
+
+}
+
+// returns an integer response representing the number of elements removed
+char * rpop_cmd(Command * cmd) {
+
+    int elem_removed = 0;
+
+    if (cmd->num_args < 1) {
+        return error_response("rpop command requires at least 1 argument (key)");
+    }
+
+    char * global_table_key = cmd->args[0];
+
+    // fetch the list from the global table
+    HashNode * fetched_node = hget(global_table, global_table_key);
+    if (!fetched_node) {
+        return error_response("key not in database");
+    }
+
+    // check if the value is a list
+    if (fetched_node->valueType != LIST) {
+        return error_response("key is not for a list");
+    }
+
+    List * list = (List *) fetched_node->value;
+
+    // remove the value from the list
+    int ret = list_rremove(list);
+    if (ret) {
+        return error_response("Failed to remove value from list");
+    }
+
+    elem_removed++;
+
+    return get_response(INTEGER, &elem_removed);
+}
+
+// returns an integer response representing the length of the list
+char * llen_cmd(Command * cmd) {
+    int len = 0;
+
+    if (cmd->num_args < 1) {
+        return error_response("llen command requires at least 1 argument (key)");
+    }
+
+    char * global_table_key = cmd->args[0];
+
+    // fetch the list from the global table
+    HashNode * fetched_node = hget(global_table, global_table_key);
+    if (!fetched_node) {
+        return error_response("key not in database");
+    }
+
+    // check if the value is a list
+    if (fetched_node->valueType != LIST) {
+        return error_response("key is not for a list");
+    }
+
+    List * list = (List *) fetched_node->value;
+
+    // get the length of the list
+    len = list->size;
+
+    return get_response(INTEGER, &len);
+}
+
+// returns a protocol string, which contains an array of all the elements in the range
+char * lrange_cmd(Command * cmd) {
+    errno = 0;
+
+    if (cmd->num_args < 3) {
+        return error_response("lrange command requires at least 3 arguments (key, start, stop)");
+    }
+
+    char * global_table_key = cmd->args[0];
+    char * start_str = cmd->args[1];
+    char * stop_str = cmd->args[2];
+    
+    int start;
+    int stop;
+
+    // convert the start to an integer
+    // use strtol and duck typing to determine the type of the value
+    char *endptr;
+    start = (int) strtol(start_str, &endptr, 10);
+
+    // check errors
+    if (errno) {
+        perror("strtol failed");
+        exit(EXIT_FAILURE);
+    }
+
+    // Check if successfully converted to an integer
+    if (!(*endptr == '\0') || (endptr == start_str)) {
+        return error_response("Failed to convert start to integer");
+    }
+
+    // convert the stop to an integer
+    stop = (int) strtol(stop_str, &endptr, 10);
+
+    // check errors
+    if (errno) {
+        perror("strtol failed");
+        exit(EXIT_FAILURE);
+    }
+
+    // Check if successfully converted to an integer
+    if (!(*endptr == '\0') || (endptr == stop_str)) {
+        return error_response("Failed to convert stop to integer");
+    }
+
+    // fetch the list from the global table
+    HashNode * fetched_node = hget(global_table, global_table_key);
+
+    if (!fetched_node) {
+        return error_response("key not in database");
+    }
+
+    // check if the value is a list
+    if (fetched_node->valueType != LIST) {
+        return error_response("key is not for a list");
+    }
+
+    List * list = (List *) fetched_node->value;
+
+    // check bounds
+    if (start < 0 || stop < 0 || start >= list->size || stop >= list->size) {
+        return error_response("start or stop index out of bounds");
+    }
+
+    // get the values from the list
+    int elems_to_fetch = stop - start + 1;
+    int num_elements = 0;
+    int inc_buffer = 5;
+
+    // buffer for the data
+    char * buffer = calloc(1 + 4 + MAX_MESSAGE_SIZE, sizeof(char));
+
+    // iterate through the list and write the values to the buffer, start and stop are inclusive
+    ListNode * current = list_iget(list, start);
+    if (!current) {
+        return error_response("Failed to get start value from list");
+    }
+
+    while (num_elements < elems_to_fetch) {
+        // write the value to the buffer
+        int type = SER_STR;
+        int data_len = strlen(current->data);
+
+        // check if the buffer has enough space to write the value
+        if (inc_buffer + 5 + data_len > MAX_MESSAGE_SIZE) {
+                fprintf(stderr, "Failed to reallocate memory for lrange response\n");
+                exit(EXIT_FAILURE);
+        }
+
+        // write the type and length of the response, 1 byte
+        memcpy(buffer + inc_buffer, &type, 1);
+        memcpy(buffer + inc_buffer + 1, &data_len, 4);
+
+        // write the value
+        memcpy(buffer + inc_buffer + 5, current->data, data_len);
+
+        inc_buffer += 5 + data_len;
+        num_elements++;
+        current = current->next;
+    }
+
+    // write the type and length of array to buffer
+    int type = SER_ARR;
+    memcpy(buffer, &type, 1);
+    memcpy(buffer + 1, &num_elements, 4);
+
+    return buffer;
+}
 
 
+// returns null response
+char * ltrim_cmd(Command * cmd) {
+    errno = 0; 
 
+    if (cmd->num_args < 3) {
+        return error_response("ltrim command requires at least 3 arguments (key, start, stop)");
+    }
+
+    char * global_table_key = cmd->args[0];
+    char * start_str = cmd->args[1];
+    char * stop_str = cmd->args[2];
+    
+    int start;
+    int stop;
+
+    // convert the start to an integer
+    // use strtol and duck typing to determine the type of the value
+    char *endptr;
+    start = (int) strtol(start_str, &endptr, 10);
+
+    // check errors
+    if (errno) {
+        perror("strtol failed");
+        exit(EXIT_FAILURE);
+    }
+
+    // Check if successfully converted to an integer
+    if (!(*endptr == '\0') || (endptr == start_str)) {
+        return error_response("Failed to convert start to integer");
+    }
+
+    // convert the stop to an integer
+    stop = (int) strtol(stop_str, &endptr, 10);
+
+    // check errors
+    if (errno) {
+        perror("strtol failed");
+        exit(EXIT_FAILURE);
+    }
+
+    // Check if successfully converted to an integer
+    if (!(*endptr == '\0') || (endptr == stop_str)) {
+        return error_response("Failed to convert stop to integer");
+    }
+
+    // fetch the list from the global table
+    HashNode * fetched_node = hget(global_table, global_table_key);
+
+    if (!fetched_node) {
+        return error_response("key not in database");
+    }
+
+    // check if the value is a list
+    if (fetched_node->valueType != LIST) {
+        return error_response("key is not for a list");
+    }
+
+    List * list = (List *) fetched_node->value;
+
+    // check bounds
+    if (start < 0 || stop < 0 || start >= list->size || stop >= list->size) {
+        return error_response("start or stop index out of bounds");
+    }
+
+    // trim the list
+    int ret = list_trim(list, start, stop);
+    if (ret) {
+        return error_response("Failed to trim list");
+    }
+
+    return null_response();
+}
+
+// returns an integer response representing the number of elements updated
+char * lset_cmd(Command * cmd) {
+    errno = 0; 
+
+    ValueType response_type = INTEGER;
+    int elem_updated = 0;
+
+    if (cmd->num_args < 3) {
+        return error_response("lset command requires at least 3 arguments (key, index, value)");
+    }
+
+    char * global_table_key = cmd->args[0];
+    char * index_str = cmd->args[1];
+    char * value = cmd->args[2];
+
+    int index;
+
+    // convert the index to an integer
+    // use strtol and duck typing to determine the type of the value
+    char *endptr;
+    index = (int) strtol(index_str, &endptr, 10);
+
+    // check errors
+    if (errno) {
+        perror("strtol failed");
+        exit(EXIT_FAILURE);
+    }
+
+    // Check if successfully converted to an integer
+    if (!(*endptr == '\0') || (endptr == index_str)) {
+        return error_response("Failed to convert index to integer");
+    }
+
+    // fetch the list from the global table
+    HashNode * fetched_node = hget(global_table, global_table_key);
+
+    if (!fetched_node) {
+        return error_response("key not in database");
+    }
+
+    // check if the value is a list
+    if (fetched_node->valueType != LIST) {
+        return error_response("key is not for a list");
+    }
+
+    List * list = (List *) fetched_node->value;
+
+    // check bounds
+    if (index < 0 || index >= list->size) {
+        return error_response("index out of bounds");
+    }
+
+    // set the value in the list
+    int ret = list_imodify(list, index, value, STRING);
+    if (ret) {
+        return error_response("Failed to set value in list");
+    }
+
+    elem_updated++;
+
+    return get_response(response_type, &elem_updated);
+}
 
 
 // execute the command and return the server response string
@@ -673,7 +1330,56 @@ char * execute_command(Command * cmd) {
 
         return keys_command();
 
-    } else if (strcmp(cmd->name, "ZADD")== 0) {
+    } else if (strcmp(cmd->name, "HSET") == 0) {
+            
+        return hset_command(cmd);
+
+    } else if (strcmp(cmd->name, "HGET") == 0) {
+
+        return hget_command(cmd);
+
+    } else if (strcmp(cmd->name, "HDEL") == 0) {
+
+        return hdel_command(cmd);
+
+    } else if (strcmp(cmd->name, "HGETALL") == 0) {
+
+        return hgetall_command(cmd);
+
+    } else if (strcmp(cmd->name, "LPUSH")== 0) {
+                
+        return lpush_command(cmd);
+
+    } else if (strcmp(cmd->name, "RPUSH") == 0) {
+            
+        return rpush_command(cmd);
+
+    } else if (strcmp(cmd->name, "LPOP") == 0) {
+    
+        return lpop_command(cmd); 
+    }
+    else if (strcmp(cmd->name, "RPOP") == 0) {
+
+        return rpop_cmd(cmd);
+
+    } else if (strcmp(cmd->name, "LLEN") == 0) {
+
+        return llen_cmd(cmd);
+
+    } else if (strcmp(cmd->name, "LRANGE") == 0) {
+
+        return lrange_cmd(cmd);
+
+    } else if (strcmp(cmd->name, "LTRIM") == 0) {
+
+        return ltrim_cmd(cmd);
+
+    } else if (strcmp(cmd->name, "LSET") == 0) {
+
+        return lset_cmd(cmd);
+
+    }
+    else if (strcmp(cmd->name, "ZADD")== 0) {
             
         return zadd_command(cmd);
 

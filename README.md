@@ -34,12 +34,16 @@ type | len_array | type_1 | len_1| element_1| type-2| len_2| element_2
 Commands currently suported:
 
 Dealing with elements in the main hashtable:
+
+Meta:
+-KEYS
+
+Strings:
 -GET
 -SET
 -DEL
--KEYS
 
-Hashtable:
+Hashtable -> only stores strings:
 -HSET
 -HGET
 -HDEL
@@ -53,7 +57,7 @@ Lists:
 -LTRIM
 -LSET
 
-Sorted Sets:
+Sorted Sets -> only stores floats, has a key for each element:
 -ZADD
 -ZREM
 -ZSCORE

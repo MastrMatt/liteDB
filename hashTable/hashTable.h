@@ -4,7 +4,7 @@
 
 
 // Define the value type enum
-typedef enum { STRING, INTEGER, FLOAT, ZSET} ValueType;
+typedef enum { STRING, INTEGER, FLOAT, ZSET, LIST, HASHTABLE} ValueType;
 
 // Define the HashNode structure
 typedef struct HashNode {

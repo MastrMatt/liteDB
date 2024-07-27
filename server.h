@@ -15,10 +15,13 @@
 
 // Zset includes AVLTree and HashTable header
 #include "ZSet/ZSet.h"
+#include "list/list.h"
 
 #define SERVERPORT 9000
 #define MAX_MESSAGE_SIZE 4096
 #define MAX_CLIENTS 2047
+
+// should be multiple of two
 #define INIT_TABLE_SIZE 1024
 
 // Protocol information

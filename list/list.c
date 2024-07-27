@@ -214,11 +214,13 @@ ListNode * list_iget(List * list, int index) {
     return traverse;
 }
 
-List * list_trim(List * list, int start, int end) {
+int list_trim(List * list, int start, int end) {
     if (start < 0 || start >= list->size || end < 0 || end >= list->size) {
         fprintf(stderr, "Index out of bounds\n");
-        return NULL;
+        return -1;
     }
+
+    int initial_size = list->size;
 
     // free the nodes that are trimmed from the start
     for (int i = 0; i < start; i++) {
@@ -226,15 +228,15 @@ List * list_trim(List * list, int start, int end) {
     }
 
     // free the nodes that are trimmed from the end
-    for (int i = list->size - 1; i > end; i--) {
+    for (int i = initial_size - 1; i > end; i--) {
         list_rremove(list);
     }
 
-    return list;
+    return 0;
 }
 
 
-List * list_print(List * list) {
+void list_print(List * list) {
     ListNode * traverse = list->head;
     while (traverse) {
         if (traverse->type == NODE_TYPE_STRING) {
@@ -244,8 +246,6 @@ List * list_print(List * list) {
         }
         traverse = traverse->next;
     }
-
-    return list;
 }
 
 
