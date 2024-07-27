@@ -41,5 +41,7 @@ HashTable * hresize(HashTable * table);
 HashNode * hinsert(HashTable * table, HashNode * node);
 HashNode * hget(HashTable * table, char * key);
 HashNode * hremove(HashTable * table, char * key);
+void hfree_table(HashTable * table);
+void hfree_table_contents(HashTable * table);
 void hprint(HashTable * table);
 

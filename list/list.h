@@ -31,6 +31,7 @@ int list_rremove(List * list);
 int list_imodify(List * list, int index, void * data, NodeType type);
 int list_trim(List * list, int start, int end);
 ListNode * list_iget(List * list, int index);
+void list_free_contents(List * list);
 void list_print(List * list);
 
 

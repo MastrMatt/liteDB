@@ -1,3 +1,6 @@
+// * This file contains the implementation of the AVL tree data structure. The snc_index is a void pointer that represents some secondary key for each AVLNode, define the compare_scnd_index function to compare two secondary indexes.
+
+
 #include "AVLTree.h"
 
 // Comparing functions
@@ -139,6 +142,10 @@ AVLNode * avl_insert(AVLNode * tree, void * scnd_index, float value) {
 
 AVLNode * get_min_node(AVLNode * tree) {
     AVLNode * current = tree;
+    if (current == NULL) {
+        return NULL;
+    }
+    
     while (current->left != NULL) {
         current = current->left;
     }
@@ -310,7 +317,7 @@ AVLNode * avl_offset(AVLNode * node, int offset) {
 }
 
 
-// free the tree
+// free the tree, (contents, tree itself)
 void avl_free(AVLNode * tree) {
     if (tree == NULL) {
         return;

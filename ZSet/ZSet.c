@@ -1,7 +1,8 @@
+// * This file contains the implementation of the ZSet data structure. The ZSet is a collection of key-value pairs, where each key is unique and maps to a float value. The ZSet is implemented using a hash table and an AVL tree. The hash table is used to store the key-value pairs, and the AVL tree is used to store the key-value pairs sorted by the value. The ZSet supports adding, removing, and searching for key-value pairs. 
+
 #include "ZSet.h"
 
-
-// configure the compare function for the secondary index, for AVL tree
+// configure the compare function for the secondary index, necessary since importing AVL Tree module
 int compare_scnd_index(void * scnd_index1, void * scnd_index2) {
     if (strcmp((char *) scnd_index1, (char *) scnd_index2) == 0) {
         // check if the strings are equal
@@ -14,6 +15,10 @@ int compare_scnd_index(void * scnd_index1, void * scnd_index2) {
 // initialize the ZSet
 ZSet * zset_init() {
     ZSet * zset = (ZSet *) calloc(1,sizeof(ZSet));
+    if (!zset) {
+        fprintf(stderr, "Memory allocation failed\n");
+        exit(EXIT_FAILURE);
+    }
 
     zset->hash_table = hcreate(INIT_TABLE_SIZE);
     zset->avl_tree = NULL;
@@ -104,6 +109,12 @@ HashNode * zset_search_by_key(ZSet * zset, char * key) {
     }
 
     return hash_node;
+}
+
+// free the ZSet contents, but not the ZSet itself
+void zset_free_contents(ZSet * zset) {
+    hfree_table(zset->hash_table);
+    avl_free(zset->avl_tree);
 }
 
 

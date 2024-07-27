@@ -1,6 +1,6 @@
 # LiteDB
 
--This is an in memory database that is run on a server, it can be used as a cache and even a complete database after persistence has been implemented. The inspiration for this project was redis, attempting to build from scratch, even data structure like hash tables and AVL trees
+-This is an in memory database that is run on a server, it can be used as a cache and even a complete database after persistence has been implemented. The inspiration for this project was redis, attempting to build everything from scratch, even data structure like hash tables and AVL trees
 
 -Server is ran on a little endian machine
 
@@ -36,12 +36,12 @@ Commands currently suported:
 Dealing with elements in the main hashtable:
 
 Meta:
+-DEL
 -KEYS
 
 Strings:
 -GET
 -SET
--DEL
 
 Hashtable -> only stores strings:
 -HSET
@@ -64,4 +64,6 @@ Sorted Sets -> only stores floats, has a key for each element:
 -ZQUERY: includes zrangebyscore and zrank
 
 
-
+Features to add:
+-Timers for the client connections to determine if idle and kickout
+-Timer for the data stored in global hashtable, TTL for caching

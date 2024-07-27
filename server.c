@@ -3,6 +3,8 @@
 // Have the in-memory global hash table to store the key-value pairs
 HashTable * global_table;
 
+// !make DEL work for ZSET, HASHTABLE and LIST in the global hash table
+
 // accepts new connection and adds it to the fd2conn array
 int accept_new_connection(Conn * fd2conn[], int server_socket) {
     // accept the new connection
@@ -184,59 +186,12 @@ Command * parse_cmd_string(char *cmd_string, int size) {
     return cmd;
 }
 
-// executes and returns a string response for the get command
-char * get_command(Command * cmd) {
-     // check if the command has the correct number of arguments
-    if (cmd->num_args != 1) {
-        return error_response("get command requires 1 argument");
-    }
-
-    // get the value from the hash table
-    HashNode * fetched_node = hget(global_table, cmd->args[0]);
-    if (!fetched_node) {
-        return error_response("Key not in database");
-    }
-
-    // get the value from the hash node
-    ValueType type = fetched_node->valueType;
-
-    if (type == ZSET) {
-        return error_response("ZSET values not supported for this command");
-    }
-
-    char * value = fetched_node->value;
-
-    return get_response(type,value);
-}
-
-// returns null response for the set command
-char * set_command(Command * cmd) {
-    
-    // obtain type of the value
-    if (cmd->num_args != 2) {
-        return error_response("set command requires 2 arguments");
-    }
-
-    // * All data is stored as strings except for the ZSET values
-    HashNode * new_node = hinit(strdup(cmd->args[0]), STRING, strdup(cmd->args[1]));
-    if (new_node == NULL) {
-        fprintf(stderr, "Error creating new node for hashtable\n");
-        exit(EXIT_FAILURE);
-    }
-
-    HashNode * ret = hinsert(global_table, new_node);
-    if (ret == NULL) {
-        return error_response("Failed to insert new node into global table");
-    }
-
-    return null_response();
-}
 
 // returns a string response representing the number of elements removed
 char * del_command(Command * cmd) {
 
     if (cmd->num_args != 1) {
-        return error_response("del command requires 1 argument");
+        return error_response("del command requires 1 argument (key)");
     }
 
     // make sure the key is not for a ZSET
@@ -246,13 +201,23 @@ char * del_command(Command * cmd) {
     }
 
     if (fetched_node->valueType == ZSET) {
-        return error_response("ZSET values not supported for this command");
-    }
+        // free the zset contents, don't free the zset itself
+        ZSet * zset = (ZSet *) fetched_node->value;
+        zset_free_contents(zset);
 
-    // remove the value from the hash table
+    } else if (fetched_node->valueType == HASHTABLE) {
+        // free the hashtable, don't free the hashtable itself
+        HashTable * table = (HashTable *) fetched_node->value;
+        hfree_table_contents(table);
+
+    } else if (fetched_node->valueType == LIST) {
+        // free the list
+        List * list = (List *) fetched_node->value;
+        list_free_contents(list);
+    } 
+
+    // if the key is not for a ZSET, HASHTABLE, or LIST, no need for extra cleanup, just remove the node from the global table
     HashNode * removed_node = hremove(global_table, cmd->args[0]);
-    
-    // free the removed node
     hfree(removed_node);
 
     return null_response();
@@ -303,354 +268,53 @@ char * keys_command() {
     return buffer;
 }
 
-// zadd key score name
-char * zadd_command(Command * cmd) {
-    errno = 0;
 
-    ValueType response_type = INTEGER;
-    int elem_added = 0;
-
-    if (cmd->num_args < 3) {
-        return error_response("zadd command requires at least 3 arguments (key, score, name)");
+// executes and returns a string response for the get command
+char * get_command(Command * cmd) {
+     // check if the command has the correct number of arguments
+    if (cmd->num_args != 1) {
+        return error_response("get command requires 1 argument (key)");
     }
 
-    char * zset_key = cmd->args[0];
-    char * score_str = cmd->args[1];
-
-    // convert the score to a float
-    // use strtol and duck typing to determine the type of the value
-    char *endptr;
-    float value = strtof(score_str, &endptr);
-
-    // check errors
-    if (errno) {
-        perror("strtof failed");
-        exit(EXIT_FAILURE);
-    }
-
-    // Check if successfully converted to a float
-    if (!(*endptr == '\0') || (endptr == score_str)) {
-        return error_response("Failed to convert score to float");
-    } 
-
-    // fetch the zset from global table
-    HashNode * fetched_node = hget(global_table, zset_key);
-
+    // get the value from the hash table
+    HashNode * fetched_node = hget(global_table, cmd->args[0]);
     if (!fetched_node) {
-        // create a new zset, 
-        ZSet * zset = zset_init();
-        if (!zset) {
-            fprintf(stderr, "Failed to create ZSet\n");
-            exit(EXIT_FAILURE);
-        }
-
-        // create a new hash node
-        HashNode * new_node = hinit(strdup(zset_key), ZSET, zset);
-        if (!new_node) {
-            fprintf(stderr, "Failed to create new hash node\n");
-            exit(EXIT_FAILURE);
-        }
-
-        // insert the new node into the global table
-        HashNode * ret = hinsert(global_table, new_node);
-        if (!ret) {
-            fprintf(stderr, "Failed to insert new node into global table\n");
-            exit(EXIT_FAILURE);
-        }
-
-        fetched_node = new_node;
+        return error_response("Key not in database");
     }
 
-    // check if the value is a ZSET
-    if (fetched_node->valueType != ZSET) {
-        return error_response("key is not for a ZSET");
+    // get the value from the hash node
+    ValueType type = fetched_node->valueType;
+
+    if (type == ZSET) {
+        return error_response("ZSET values not supported for this command");
     }
 
-    ZSet * zset = (ZSet *) fetched_node->value;
+    char * value = fetched_node->value;
 
-    // add the value to the ZSET
-    int ret = zset_add(zset, cmd->args[2], value);
-    if (ret < 0) {
-        return error_response("Failed to add value to ZSET");
-    }
-    elem_added++;
-
-
-    return get_response(response_type, &elem_added);
+    return get_response(type,value);
 }
 
-// zrem key name
-char * zrem_command(Command * cmd) {
-    errno = 0;
-
-    ValueType response_type = INTEGER;
-    int elem_removed = 0;
+// returns null response for the set command
+char * set_command(Command * cmd) {
     
-        if (cmd->num_args < 2) {
-            return error_response("zrem command requires at least 2 arguments (key, name)");
-        }
-
-        char * zset_key = cmd->args[0];
-        char * element_key = cmd->args[1];
-
-        // fetch the zset from the global table
-        HashNode * fetched_node = hget(global_table, zset_key);
-        if (!fetched_node) {
-            return error_response("zset key not in database");
-        }
-
-        // check if the value is a ZSET
-        if (fetched_node->valueType != ZSET) {
-            return error_response("key is not for a zset");
-        }
-
-        ZSet * zset = (ZSet *) fetched_node->value;
-
-        // remove the value from the ZSET
-        int ret = zset_remove(zset, element_key);
-        if (ret < 0) {
-            return error_response("Failed to remove value from zset");
-        }       
-
-        elem_removed++;
-
-        return get_response(response_type, &elem_removed);
-}
-
-// zscore key name
-// 
-char * zscore_cmd(Command * cmd) {
-    errno = 0;
-
-    ValueType response_type = FLOAT;
-    float score;
-
-    if (cmd->num_args < 2) {
-        return error_response("zscore command requires at least 2 arguments (key, name)");
+    // obtain type of the value
+    if (cmd->num_args != 2) {
+        return error_response("set command requires 2 arguments (key, value)");
     }
 
-    char * zset_key = cmd->args[0];
-    char * element_key = cmd->args[1];
-
-    // fetch the zset from the global table
-    HashNode * fetched_node = hget(global_table, zset_key);
-    if (!fetched_node) {
-        return error_response("zset key not in database");
-    }
-
-    // check if the value is a ZSET
-    if (fetched_node->valueType != ZSET) {
-        return error_response("key is not for a zset");
-    }
-
-    ZSet * zset = (ZSet *) fetched_node->value;
-
-    // search for the value in the ZSET
-    HashNode * ret_node = zset_search_by_key(zset, element_key);
-    if (!ret_node) {
-        return error_response("Element not in zset");
-    }
-
-    // check if the value is a float
-    if (ret_node->valueType != FLOAT) {
-        fprintf(stderr, "Value in zset is somehow not a float\n");
+    // * All data is stored as strings except for the ZSET values
+    HashNode * new_node = hinit(strdup(cmd->args[0]), STRING, strdup(cmd->args[1]));
+    if (new_node == NULL) {
+        fprintf(stderr, "Error creating new node for hashtable\n");
         exit(EXIT_FAILURE);
     }
 
-    score = *(float *) ret_node->value;
-
-    return get_response(response_type, &score);
-}
-
-
-char * avl_iterate_response(AVLNode * tree, AVLNode * start, long limit) {
-    int num_elements = 0;
-    int inc_buffer = 5;
-
-    // buffer for the data
-    char * buffer = calloc(1 + 4 + MAX_MESSAGE_SIZE, sizeof(char));
-
-    // iterate through the AVL tree and write the key and score to the buffer
-    AVLNode * current = start;
-    while (current != NULL && (num_elements/2 < limit) ) {
-        // write the key to the buffer
-        int type = SER_STR;
-        int key_len = strlen((char *)current->scnd_index);
-
-        // check if the buffer has enough space to write the key
-        if (inc_buffer + 5 + key_len > MAX_MESSAGE_SIZE) {
-                fprintf(stderr, "Failed to reallocate memory for zquery response\n");
-                exit(EXIT_FAILURE);
-        }
-
-        // write the type and length of the response, 1 byte
-        memcpy(buffer + inc_buffer, &type, 1);
-        memcpy(buffer + inc_buffer + 1, &key_len, 4);
-
-        // write the key
-        memcpy(buffer + inc_buffer + 5, current->scnd_index, key_len);
-
-        inc_buffer += 5 + key_len;
-        num_elements++;
-
-        // now write the score
-        type = SER_FLOAT;
-        int score_len = sizeof(float);
-
-        // check if the buffer has enough space to write the score
-        if (inc_buffer + 5 + score_len > MAX_MESSAGE_SIZE) {
-                fprintf(stderr, "Failed to reallocate memory for zquery response\n");
-                exit(EXIT_FAILURE);
-        }
-
-        // write the type and length of the response, 1 byte
-        memcpy(buffer + inc_buffer, &type, 1);
-        memcpy(buffer + inc_buffer + 1, &score_len, 4);
-
-        // write the score
-        memcpy(buffer + inc_buffer + 5, &current->value, score_len);
-
-        inc_buffer += 5 + score_len;
-        num_elements++;
-
-        // go to next ranked node
-        current = avl_offset(current, 1);
+    HashNode * ret = hinsert(global_table, new_node);
+    if (ret == NULL) {
+        return error_response("Failed to insert new node into global table");
     }
 
-    // write the type and length of array to buffer
-    int type = SER_ARR;
-    memcpy(buffer, &type, 1);
-    memcpy(buffer + 1, &num_elements, 4);
-
-    return buffer;
-}
-
-// zquery key score name offset limit
-char * zquery_cmd(Command * cmd) {
-    errno = 0;
-
-    if (cmd->num_args < 5) {
-        return error_response("zquery command requires at least 5 arguments (key, score, name, offset, limit)");
-    }
-
-    char * zset_key = cmd->args[0];
-    char * score_str = cmd->args[1];
-    char * element_key = cmd->args[2];
-    char * offset_str = cmd->args[3];
-    char * limit_str = cmd->args[4];
-
-    float score;
-    int offset;
-    int limit;
-
-    // convert the score to a float
-    // use strtol and duck typing to determine the type of the value
-    char *endptr;
-    score = strtof(score_str, &endptr);
-
-    // check errors
-    if (errno) {
-        perror("strtof failed");
-        exit(EXIT_FAILURE);
-    }
-
-    // Check if successfully converted to a float
-    if (!(*endptr == '\0') || (endptr == score_str)) {
-        return error_response("Failed to convert score to float");
-    }
-
-    // convert the offset to an integer
-    offset = (int) strtol(offset_str, &endptr, 10);
-
-    // check errors
-    if (errno) {
-        perror("strtol failed");
-        exit(EXIT_FAILURE);
-    }
-
-    // Check if successfully converted to an integer
-    if (!(*endptr == '\0') || (endptr == offset_str)) {
-        return error_response("Failed to convert offset to integer");
-    }
-
-    // convert the limit to an integer
-    limit = (int) strtol(limit_str, &endptr, 10);
-
-    // check errors
-    if (errno) {
-        perror("strtol failed");
-        exit(EXIT_FAILURE);
-    }
-
-    // Check if successfully converted to an integer
-    if (!(*endptr == '\0') || !(endptr != limit_str)) {
-        return error_response("Failed to convert limit to integer");
-    }
-
-    // fetch the zset from the global table
-    HashNode * fetched_node = hget(global_table, zset_key);
-    if (!fetched_node) {
-        return error_response("zset key not in database");
-    }
-
-    // check if the value is a ZSET
-    if (fetched_node->valueType != ZSET) {
-        return error_response("key is not for a zset");
-    }
-
-    ZSet * zset = (ZSet *) fetched_node->value;
-
-   
-   if ((isinf(score) == -1) && (strcmp(element_key, "\"\"") == 0)){
-        // "" was passed as the key and -inf was passed as the score, perform a rank query
-        printf("Performing rank query\n");
-
-        // find the element with smallest rank
-        AVLNode * origin_node = get_min_node(zset->avl_tree);
-
-        if (!origin_node) {
-            return error_response("Element not in zset");
-        }
-
-        // offset the rank of the node in the AVL tree by the value specified by the offset parameter
-        AVLNode * offset_node = avl_offset(origin_node, offset);
-
-        return avl_iterate_response(zset->avl_tree, offset_node, limit);
-
-    } else if (strcmp(element_key, "\"\"") == 0) {
-        // ! potential problem dealing with equal scores here due to the fact that nodes with equal scores can be stored on the right and left based on AVL rotations
-        // "" was passed as the key, perform a range query with score without name
-        printf("Performing range query\n");
-
-
-        // find the element in the ZSET using AVL tree
-        AVLNode * origin_node = avl_search_float(zset->avl_tree, score);
-
-        if (!origin_node) {
-            return error_response("Element not in zset");
-        }
-
-        // offset the rank of the node in the AVL tree by the value specified by the offset parameter
-        AVLNode * offset_node = avl_offset(origin_node, offset);
-
-        return avl_iterate_response(zset->avl_tree, offset_node, limit);
-    } else {
-        // perform a query for the specific element
-
-        // find the element in the ZSET using AVL tree
-        AVLNode * origin_node = avl_search_pair(zset->avl_tree, element_key, score);
-
-        if (!origin_node) {
-            return error_response("Element not in zset");
-        }
-
-        // offset the rank of the node in the AVL tree by the value specified by the offset parameter
-        AVLNode * offset_node = avl_offset(origin_node, offset);
-
-        return avl_iterate_response(zset->avl_tree, offset_node, limit);
-    }
-
-        
+    return null_response();
 }
 
 // hashtable only store strings in this db
@@ -872,6 +536,8 @@ char * hgetall_command(Command * cmd) {
 
     return buffer;
 }
+
+
 
 // returns an integer response representing the number of elements added
 char * lpush_command(Command * cmd) {
@@ -1312,6 +978,357 @@ char * lset_cmd(Command * cmd) {
 }
 
 
+// zadd key score name
+char * zadd_command(Command * cmd) {
+    errno = 0;
+
+    ValueType response_type = INTEGER;
+    int elem_added = 0;
+
+    if (cmd->num_args < 3) {
+        return error_response("zadd command requires at least 3 arguments (key, score, name)");
+    }
+
+    char * zset_key = cmd->args[0];
+    char * score_str = cmd->args[1];
+
+    // convert the score to a float
+    // use strtol and duck typing to determine the type of the value
+    char *endptr;
+    float value = strtof(score_str, &endptr);
+
+    // check errors
+    if (errno) {
+        perror("strtof failed");
+        exit(EXIT_FAILURE);
+    }
+
+    // Check if successfully converted to a float
+    if (!(*endptr == '\0') || (endptr == score_str)) {
+        return error_response("Failed to convert score to float");
+    } 
+
+    // fetch the zset from global table
+    HashNode * fetched_node = hget(global_table, zset_key);
+
+    if (!fetched_node) {
+        // create a new zset, 
+        ZSet * zset = zset_init();
+        if (!zset) {
+            fprintf(stderr, "Failed to create ZSet\n");
+            exit(EXIT_FAILURE);
+        }
+
+        // create a new hash node
+        HashNode * new_node = hinit(strdup(zset_key), ZSET, zset);
+        if (!new_node) {
+            fprintf(stderr, "Failed to create new hash node\n");
+            exit(EXIT_FAILURE);
+        }
+
+        // insert the new node into the global table
+        HashNode * ret = hinsert(global_table, new_node);
+        if (!ret) {
+            fprintf(stderr, "Failed to insert new node into global table\n");
+            exit(EXIT_FAILURE);
+        }
+
+        fetched_node = new_node;
+    }
+
+    // check if the value is a ZSET
+    if (fetched_node->valueType != ZSET) {
+        return error_response("key is not for a ZSET");
+    }
+
+    ZSet * zset = (ZSet *) fetched_node->value;
+
+    // add the value to the ZSET
+    int ret = zset_add(zset, cmd->args[2], value);
+    if (ret < 0) {
+        return error_response("Failed to add value to ZSET");
+    }
+    elem_added++;
+
+
+    return get_response(response_type, &elem_added);
+}
+
+// zrem key name
+char * zrem_command(Command * cmd) {
+    errno = 0;
+
+    ValueType response_type = INTEGER;
+    int elem_removed = 0;
+    
+        if (cmd->num_args < 2) {
+            return error_response("zrem command requires at least 2 arguments (key, name)");
+        }
+
+        char * zset_key = cmd->args[0];
+        char * element_key = cmd->args[1];
+
+        // fetch the zset from the global table
+        HashNode * fetched_node = hget(global_table, zset_key);
+        if (!fetched_node) {
+            return error_response("zset key not in database");
+        }
+
+        // check if the value is a ZSET
+        if (fetched_node->valueType != ZSET) {
+            return error_response("key is not for a zset");
+        }
+
+        ZSet * zset = (ZSet *) fetched_node->value;
+
+        // remove the value from the ZSET
+        int ret = zset_remove(zset, element_key);
+        if (ret < 0) {
+            return error_response("Failed to remove value from zset");
+        }       
+
+        elem_removed++;
+
+        return get_response(response_type, &elem_removed);
+}
+
+// zscore key name
+// 
+char * zscore_cmd(Command * cmd) {
+    errno = 0;
+
+    ValueType response_type = FLOAT;
+    float score;
+
+    if (cmd->num_args < 2) {
+        return error_response("zscore command requires at least 2 arguments (key, name)");
+    }
+
+    char * zset_key = cmd->args[0];
+    char * element_key = cmd->args[1];
+
+    // fetch the zset from the global table
+    HashNode * fetched_node = hget(global_table, zset_key);
+    if (!fetched_node) {
+        return error_response("zset key not in database");
+    }
+
+    // check if the value is a ZSET
+    if (fetched_node->valueType != ZSET) {
+        return error_response("key is not for a zset");
+    }
+
+    ZSet * zset = (ZSet *) fetched_node->value;
+
+    // search for the value in the ZSET
+    HashNode * ret_node = zset_search_by_key(zset, element_key);
+    if (!ret_node) {
+        return error_response("Element not in zset");
+    }
+
+    // check if the value is a float
+    if (ret_node->valueType != FLOAT) {
+        fprintf(stderr, "Value in zset is somehow not a float\n");
+        exit(EXIT_FAILURE);
+    }
+
+    score = *(float *) ret_node->value;
+
+    return get_response(response_type, &score);
+}
+
+
+char * avl_iterate_response(AVLNode * tree, AVLNode * start, long limit) {
+    int num_elements = 0;
+    int inc_buffer = 5;
+
+    // buffer for the data
+    char * buffer = calloc(1 + 4 + MAX_MESSAGE_SIZE, sizeof(char));
+
+    // iterate through the AVL tree and write the key and score to the buffer
+    AVLNode * current = start;
+    while (current != NULL && (num_elements/2 < limit) ) {
+        // write the key to the buffer
+        int type = SER_STR;
+        int key_len = strlen((char *)current->scnd_index);
+
+        // check if the buffer has enough space to write the key
+        if (inc_buffer + 5 + key_len > MAX_MESSAGE_SIZE) {
+                fprintf(stderr, "Failed to reallocate memory for zquery response\n");
+                exit(EXIT_FAILURE);
+        }
+
+        // write the type and length of the response, 1 byte
+        memcpy(buffer + inc_buffer, &type, 1);
+        memcpy(buffer + inc_buffer + 1, &key_len, 4);
+
+        // write the key
+        memcpy(buffer + inc_buffer + 5, current->scnd_index, key_len);
+
+        inc_buffer += 5 + key_len;
+        num_elements++;
+
+        // now write the score
+        type = SER_FLOAT;
+        int score_len = sizeof(float);
+
+        // check if the buffer has enough space to write the score
+        if (inc_buffer + 5 + score_len > MAX_MESSAGE_SIZE) {
+                fprintf(stderr, "Failed to reallocate memory for zquery response\n");
+                exit(EXIT_FAILURE);
+        }
+
+        // write the type and length of the response, 1 byte
+        memcpy(buffer + inc_buffer, &type, 1);
+        memcpy(buffer + inc_buffer + 1, &score_len, 4);
+
+        // write the score
+        memcpy(buffer + inc_buffer + 5, &current->value, score_len);
+
+        inc_buffer += 5 + score_len;
+        num_elements++;
+
+        // go to next ranked node
+        current = avl_offset(current, 1);
+    }
+
+    // write the type and length of array to buffer
+    int type = SER_ARR;
+    memcpy(buffer, &type, 1);
+    memcpy(buffer + 1, &num_elements, 4);
+
+    return buffer;
+}
+
+// zquery key score name offset limit
+char * zquery_cmd(Command * cmd) {
+    errno = 0;
+
+    if (cmd->num_args < 5) {
+        return error_response("zquery command requires at least 5 arguments (key, score, name, offset, limit)");
+    }
+
+    char * zset_key = cmd->args[0];
+    char * score_str = cmd->args[1];
+    char * element_key = cmd->args[2];
+    char * offset_str = cmd->args[3];
+    char * limit_str = cmd->args[4];
+
+    float score;
+    int offset;
+    int limit;
+
+    // convert the score to a float
+    // use strtol and duck typing to determine the type of the value
+    char *endptr;
+    score = strtof(score_str, &endptr);
+
+    // check errors
+    if (errno) {
+        perror("strtof failed");
+        exit(EXIT_FAILURE);
+    }
+
+    // Check if successfully converted to a float
+    if (!(*endptr == '\0') || (endptr == score_str)) {
+        return error_response("Failed to convert score to float");
+    }
+
+    // convert the offset to an integer
+    offset = (int) strtol(offset_str, &endptr, 10);
+
+    // check errors
+    if (errno) {
+        perror("strtol failed");
+        exit(EXIT_FAILURE);
+    }
+
+    // Check if successfully converted to an integer
+    if (!(*endptr == '\0') || (endptr == offset_str)) {
+        return error_response("Failed to convert offset to integer");
+    }
+
+    // convert the limit to an integer
+    limit = (int) strtol(limit_str, &endptr, 10);
+
+    // check errors
+    if (errno) {
+        perror("strtol failed");
+        exit(EXIT_FAILURE);
+    }
+
+    // Check if successfully converted to an integer
+    if (!(*endptr == '\0') || !(endptr != limit_str)) {
+        return error_response("Failed to convert limit to integer");
+    }
+
+    // fetch the zset from the global table
+    HashNode * fetched_node = hget(global_table, zset_key);
+    if (!fetched_node) {
+        return error_response("zset key not in database");
+    }
+
+    // check if the value is a ZSET
+    if (fetched_node->valueType != ZSET) {
+        return error_response("key is not for a zset");
+    }
+
+    ZSet * zset = (ZSet *) fetched_node->value;
+
+   
+   if ((isinf(score) == -1) && (strcmp(element_key, "\"\"") == 0)){
+        // "" was passed as the key and -inf was passed as the score, perform a rank query
+        printf("Performing rank query\n");
+
+        // find the element with smallest rank
+        AVLNode * origin_node = get_min_node(zset->avl_tree);
+
+        if (!origin_node) {
+            return error_response("No valid elements in zset");
+        }
+
+        // offset the rank of the node in the AVL tree by the value specified by the offset parameter
+        AVLNode * offset_node = avl_offset(origin_node, offset);
+
+        return avl_iterate_response(zset->avl_tree, offset_node, limit);
+
+    } else if (strcmp(element_key, "\"\"") == 0) {
+        // ! potential problem dealing with equal scores here due to the fact that nodes with equal scores can be stored on the right and left based on AVL rotations
+        // "" was passed as the key, perform a range query with score without name
+        printf("Performing range query\n");
+
+
+        // find the element in the ZSET using AVL tree
+        AVLNode * origin_node = avl_search_float(zset->avl_tree, score);
+
+        if (!origin_node) {
+            return error_response("No valid elements in zset");
+        }
+
+        // offset the rank of the node in the AVL tree by the value specified by the offset parameter
+        AVLNode * offset_node = avl_offset(origin_node, offset);
+
+        return avl_iterate_response(zset->avl_tree, offset_node, limit);
+    } else {
+        // perform a query for the specific element
+
+        // find the element in the ZSET using AVL tree
+        AVLNode * origin_node = avl_search_pair(zset->avl_tree, element_key, score);
+
+        if (!origin_node) {
+            return error_response("Element not in zset");
+        }
+
+        // offset the rank of the node in the AVL tree by the value specified by the offset parameter
+        AVLNode * offset_node = avl_offset(origin_node, offset);
+
+        return avl_iterate_response(zset->avl_tree, offset_node, limit);
+    }
+
+        
+}
+
+
 // execute the command and return the server response string
 char * execute_command(Command * cmd) {
     if (strcmp(cmd->name, "GET") == 0) {
@@ -1741,7 +1758,6 @@ int main (int argc, char * argv []) {
     }
 
     return 0;
-
 }
 
 

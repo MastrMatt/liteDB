@@ -1,6 +1,6 @@
-// This is a simple implementation of a hashtable in C, with the ability to store strings and integers by specifying the ValueType. The hash function used is the djb2 hash function. The hashtable automatically resizes when the load factor exceeds a certain threshold. The hprint function is used to print the contents of the hashtable for debugging purposes. Insert hashnodes into the hashtable using hinsert, retrieve them using hget, and remove them using hremove. The hresize function is used to double the size of the hashtable when it is full.
+// * This is a simple implementation of a hashtable in C, with the ability to store strings and integers by specifying the ValueType. The hash function used is the djb2 hash function. The hashtable automatically resizes when the load factor exceeds a certain threshold. The hprint function is used to print the contents of the hashtable for debugging purposes. Insert hashnodes into the hashtable using hinsert, retrieve them using hget, and remove them using hremove. The hresize function is used to double the size of the hashtable when it is full.
 
-// !Change this module, should not be freeing memory it did not allocate (hremove)
+// ! This module is different from the other modules, it expects to receive the key and value as they are, and it does not duplicate the key or value. The caller is responsible for freeing the key and value using hfree(), hremove() will NOT free the key and value, it will only remove the node from the hashtable.
 
 #include "hashTable.h"
 
@@ -202,6 +202,41 @@ HashTable * hresize(HashTable * table) {
     free(newTable);
 
     return table;
+}
+
+// free the entire hashtable (contents and the table itself)
+void hfree_table(HashTable * table) {
+    for (int i = 0; i <= table->mask; i++) {
+        HashNode * traverseList = table->nodes[i];
+    
+            while (traverseList != NULL) {
+                HashNode * temp = traverseList->next;
+                free(traverseList->key);
+                free(traverseList->value);
+                free(traverseList);
+                traverseList = temp;
+            }
+    }
+
+    free(table->nodes);
+    free(table);
+}
+
+// Free the contents of the hashtable, but not the hashtable itself
+void hfree_table_contents(HashTable * table) {
+    for (int i = 0; i <= table->mask; i++) {
+        HashNode * traverseList = table->nodes[i];
+    
+            while (traverseList != NULL) {
+                HashNode * temp = traverseList->next;
+                free(traverseList->key);
+                free(traverseList->value);
+                free(traverseList);
+                traverseList = temp;
+            }
+    }
+
+    free(table->nodes);
 }
 
 //Print the hashtable

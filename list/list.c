@@ -1,3 +1,5 @@
+// * This file contains the implementation of the doubly linked list. The list is a collection of nodes, each node contains a data field and two pointers to the next and previous nodes. The list can be used to store data of different types, the type of the data is specified by the NodeType enum.
+
 #include "list.h"
 
 // This will be a doubly linked list, allow bidirectional traversal
@@ -233,6 +235,17 @@ int list_trim(List * list, int start, int end) {
     }
 
     return 0;
+}
+
+void list_free_contents(List * list) {
+    ListNode * traverse = list->head;
+    while (traverse) {
+        ListNode * temp = traverse->next;
+        free(traverse->data);
+        free(traverse);
+        traverse = temp;
+    }
+
 }
 
 
