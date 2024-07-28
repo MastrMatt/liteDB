@@ -66,4 +66,5 @@ Sorted Sets -> only stores floats, has a key for each element:
 
 Features to add:
 -Timers for the client connections to determine if idle and kickout
--Timer for the data stored in global hashtable, TTL for caching
+-Timer for the data stored in global hashtable (TTL for caching)
+-AOF rewriting when the aof file becomes too large
