@@ -191,11 +191,14 @@ int main() {
 
     printf("Connecting to server\n");
 
-    check_error(connect(client_socket, (struct sockaddr *) &server_address, sizeof(server_address)));
+    if(connect(client_socket, (struct sockaddr *) &server_address, sizeof(server_address)) < 0) {
+        perror("Connection failed");
+        exit(EXIT_FAILURE);    
+    };
 
     while (1) {
         char message[200];
-        printf("Enter a cmd: ");
+        printf("liteDB> ");
         fgets(message, 200, stdin);
 
         // remove the newline character

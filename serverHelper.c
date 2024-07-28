@@ -1,12 +1,5 @@
 #include "server.h"
 
-void check_error(int value) {
-    if (value < 0) {
-        perror("error");
-        exit(1);
-    }
-}
-
 /*
 helper function to handle reading from a tcp socket, since tcp sockets can have partial reads
 */

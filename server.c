@@ -3,8 +3,7 @@
 // Global structures
 HashTable * global_table;
 AOF * global_aof;
-
-// !make DEL work for ZSET, HASHTABLE and LIST in the global hash table
+pthread_t aof_thread;
 
 // accepts new connection and adds it to the fd2conn array
 int accept_new_connection(Conn * fd2conn[], int server_socket) {
@@ -1786,13 +1785,23 @@ int main (int argc, char * argv []) {
     // change the aof back to append mode, so that new commands are appended to the file
     aof_change_mode(global_aof, "a");
 
+    // start the aof flushing thread
+    int ret = pthread_create(&aof_thread, NULL, aof_flush, (void *) global_aof);
+    if (ret) {
+        fprintf(stderr, "Failed to create AOF flush thread\n");
+        exit(EXIT_FAILURE);
+    }
+
     // create the socket
     int server_socket= socket(AF_INET, SOCK_STREAM, 0);
-    check_error(server_socket);
+    if(server_socket);
     
-    // Set the socket options to allow address reuse, only for debugging
+    // ! Set the socket options to allow address reuse, only for debugging
     int optval = 1;
-    check_error(setsockopt(server_socket, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof(optval)));
+    if(setsockopt(server_socket, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof(optval)) < 0) {
+        perror("setsockopt failed");
+        exit(EXIT_FAILURE);
+    };
 
     // define the server address
     struct sockaddr_in server_address;
@@ -1805,10 +1814,16 @@ int main (int argc, char * argv []) {
 
 
     // bind the socket to the specified IP and port
-    check_error(bind(server_socket, (struct sockaddr *) &server_address, sizeof(server_address)));
+    if (bind(server_socket, (struct sockaddr *) &server_address, sizeof(server_address)) < 0) {
+        perror("bind failed");
+        exit(EXIT_FAILURE);
+    };
 
     // listen for incoming connections, allow maximum number of connections allowed by the OS
-    check_error(listen(server_socket, SOMAXCONN));
+    if(listen(server_socket, SOMAXCONN) < 0) {
+        perror("listen failed");
+        exit(EXIT_FAILURE);
+    }
 
     // a map of all client connections, keyed by fd(Use array to avoid hash table for simplicity)
     Conn * fd2conn[MAX_CLIENTS] = {0};
@@ -1882,6 +1897,9 @@ int main (int argc, char * argv []) {
         }
 
     }
+
+    // close aof
+    aof_close(global_aof);
 
     return 0;
 }

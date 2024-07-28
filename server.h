@@ -24,7 +24,7 @@
 
 // persistent storage
 #define AOF_FILE "AOF.aof"
-#define FLUSH_INTERVAL_SEC 1
+#define FLUSH_INTERVAL_SEC 5
 
 // should be multiple of two
 #define INIT_TABLE_SIZE 1024
@@ -81,7 +81,6 @@ typedef enum {
 } SerialType;
 
 // helper functions
-void check_error(int value);
 int read_tcp_socket(int fd, char * buffer, int size);
 int write_tcp_socket(int fd, char * buffer, int size);
 void set_fd_nonblocking(int fd);
@@ -98,7 +97,7 @@ void state_resp(Conn * conn);
 // aof functions
 AOF * aof_init(char * aof_file_name, int flush_interval_sec, char * mode);
 void aof_change_mode(AOF * aof, char * mode);
-void aof_flush(void * aof);
+void * aof_flush(void * aof);
 void aof_close(AOF * aof);
 void aof_write(AOF * aof, char * message);
 char * aof_read_line(AOF * aof);

@@ -21,6 +21,8 @@ AOF * aof_init(char * aof_file_name, int flush_interval_sec, char * mode) {
         exit(EXIT_FAILURE);
     }
 
+    new_aof->flush_interval_sec = flush_interval_sec;
+
     return new_aof;
 }
 
@@ -45,7 +47,7 @@ void aof_change_mode(AOF * aof, char * mode) {
 }
 
 // create a function for flushing file buffer to disk, a worker thread will call this function
-void aof_flush(void * aof) {
+void * aof_flush(void * aof) {
     AOF * aof_ptr = (AOF *) aof;
     while (1) {
         // sleep for the flush interval
@@ -60,6 +62,8 @@ void aof_flush(void * aof) {
         // unlock the mutex
         pthread_mutex_unlock(&aof_ptr->mutex);
     }
+
+    return NULL;
 }       
 
 // ensure the file is closed and the mutex is destroyed
