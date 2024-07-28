@@ -12,6 +12,7 @@
 #include <fcntl.h>
 #include <poll.h>
 #include <stdbool.h>
+#include <pthread.h>
 
 // Zset includes AVLTree and HashTable header
 #include "ZSet/ZSet.h"
@@ -20,6 +21,10 @@
 #define SERVERPORT 9000
 #define MAX_MESSAGE_SIZE 4096
 #define MAX_CLIENTS 2047
+
+// persistent storage
+#define AOF_FILE "AOF.aof"
+#define FLUSH_INTERVAL_SEC 1
 
 // should be multiple of two
 #define INIT_TABLE_SIZE 1024
@@ -56,6 +61,15 @@ typedef struct {
 
 } Command;
 
+
+typedef struct AOF {
+    FILE * file;
+    int flush_interval_sec;
+    
+    // mutex for file access
+    pthread_mutex_t mutex;
+} AOF;
+
 typedef enum {
     SER_NIL,
     SER_ERR,
@@ -81,5 +95,12 @@ bool try_flush_write_buffer(Conn * conn);
 void state_req(Conn * conn);
 void state_resp(Conn * conn);
 
+// aof functions
+AOF * aof_init(char * aof_file_name, int flush_interval_sec, char * mode);
+void aof_change_mode(AOF * aof, char * mode);
+void aof_flush(void * aof);
+void aof_close(AOF * aof);
+void aof_write(AOF * aof, char * message);
+char * aof_read_line(AOF * aof);
 
 #endif

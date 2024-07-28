@@ -9,6 +9,9 @@ test
 server
 client
 
+# persistence
+*.aof
+
 # Prerequisites
 *.d
 

@@ -1,7 +1,8 @@
 #include "server.h"
 
-// Have the in-memory global hash table to store the key-value pairs
+// Global structures
 HashTable * global_table;
+AOF * global_aof;
 
 // !make DEL work for ZSET, HASHTABLE and LIST in the global hash table
 
@@ -187,8 +188,37 @@ Command * parse_cmd_string(char *cmd_string, int size) {
 }
 
 
+void handle_aof_write(Command * cmd) {
+
+    // check if the AOF was initialized
+    if (!global_aof) {
+        fprintf(stderr, "AOF not initialized\n");
+        exit(EXIT_FAILURE);
+    }
+    
+    // create a string from the command
+    char message[MAX_MESSAGE_SIZE] = {'\0'};
+
+    // write the command name
+    snprintf(message, MAX_MESSAGE_SIZE, "%s ", cmd->name);
+
+    // write the command arguments
+    for (int i = 0; i < cmd->num_args - 1; i++) {
+        snprintf(message + strlen(message), MAX_MESSAGE_SIZE - strlen(message) - 1, "%s ", cmd->args[i]);
+    }
+
+    // write the final argument
+    snprintf(message + strlen(message), MAX_MESSAGE_SIZE - strlen(message) - 1, "%s\n", cmd->args[cmd->num_args - 1]);
+
+    // write the command to the AOF
+    aof_write(global_aof, message);
+
+}
+
+
+
 // returns a string response representing the number of elements removed
-char * del_command(Command * cmd) {
+char * del_command(Command * cmd, bool aof_restore) {
 
     if (cmd->num_args != 1) {
         return error_response("del command requires 1 argument (key)");
@@ -220,7 +250,13 @@ char * del_command(Command * cmd) {
     HashNode * removed_node = hremove(global_table, cmd->args[0]);
     hfree(removed_node);
 
-    return null_response();
+    if (!aof_restore) {
+        handle_aof_write(cmd);
+        return null_response();
+    } else {
+        return NULL;
+    }
+
 }
 
 // returns a protocol string, which contains an array of all the keys in the hash table
@@ -295,7 +331,7 @@ char * get_command(Command * cmd) {
 }
 
 // returns null response for the set command
-char * set_command(Command * cmd) {
+char * set_command(Command * cmd, bool aof_restore) {
     
     // obtain type of the value
     if (cmd->num_args != 2) {
@@ -314,12 +350,18 @@ char * set_command(Command * cmd) {
         return error_response("Failed to insert new node into global table");
     }
 
-    return null_response();
+
+    if (!aof_restore) {
+        handle_aof_write(cmd);
+        return null_response();
+    } else {
+        return NULL;
+    }
 }
 
 // hashtable only store strings in this db
 // returns a string response representing the number of elements added/updated
-char * hset_command(Command * cmd) {
+char * hset_command(Command * cmd, bool aof_restore) {
 
     ValueType response_type = INTEGER;
     int elem_added = 0;
@@ -378,7 +420,12 @@ char * hset_command(Command * cmd) {
 
     elem_added++;
 
-    return get_response(response_type, &elem_added);
+    if (!aof_restore) {
+        handle_aof_write(cmd);
+        return get_response(response_type, &elem_added);
+    } else {
+        return NULL;
+    }
 }
 
 // returns a string response for the hget command
@@ -413,7 +460,7 @@ char * hget_command(Command * cmd) {
 }
 
 // returns an integer response representing the number of elements removed
-char * hdel_command(Command * cmd) {
+char * hdel_command(Command * cmd, bool aof_restore) {
 
     ValueType response_type = INTEGER;
     int elem_removed = 0;
@@ -449,7 +496,12 @@ char * hdel_command(Command * cmd) {
 
     elem_removed++;
 
-    return get_response(response_type, &elem_removed);
+    if (!aof_restore) {
+        handle_aof_write(cmd);
+        return get_response(response_type, &elem_removed);
+    } else {
+        return NULL;
+    }
 }
 
 // returns a protocol string, which contains an array of all the keys and values in the hash table
@@ -540,7 +592,7 @@ char * hgetall_command(Command * cmd) {
 
 
 // returns an integer response representing the number of elements added
-char * lpush_command(Command * cmd) {
+char * lpush_command(Command * cmd, bool aof_restore) {
     ValueType response_type = INTEGER;
     int elem_added = 0;
 
@@ -582,11 +634,16 @@ char * lpush_command(Command * cmd) {
     }
     elem_added++;
 
-    return get_response(response_type, &elem_added);
+    if (!aof_restore) {
+        handle_aof_write(cmd);
+        return get_response(response_type, &elem_added);
+    } else {
+        return NULL;
+    }
 }
 
 // returns an integer response representing the number of elements added
-char * rpush_command(Command * cmd) {
+char * rpush_command(Command * cmd, bool aof_restore) {
     ValueType response_type = INTEGER;
     int elem_added = 0;
 
@@ -611,6 +668,7 @@ char * rpush_command(Command * cmd) {
             return error_response("Failed to insert new list into global table");
         }
 
+
         fetched_node = new_node;
     }
 
@@ -632,7 +690,7 @@ char * rpush_command(Command * cmd) {
 }
 
 // returns an integer response representing the number of elements removed
-char * lpop_command(Command * cmd) {
+char * lpop_command(Command * cmd, bool aof_restore) {
 
     int elem_removed;
 
@@ -662,13 +720,19 @@ char * lpop_command(Command * cmd) {
     }
 
     elem_removed++;
+    
 
-    return get_response(INTEGER, &elem_removed);
+    if (!aof_restore) {
+        handle_aof_write(cmd);
+        return get_response(INTEGER, &elem_removed);
+    } else {
+        return NULL;
+    }
 
 }
 
 // returns an integer response representing the number of elements removed
-char * rpop_cmd(Command * cmd) {
+char * rpop_cmd(Command * cmd, bool aof_restore) {
 
     int elem_removed = 0;
 
@@ -699,7 +763,13 @@ char * rpop_cmd(Command * cmd) {
 
     elem_removed++;
 
-    return get_response(INTEGER, &elem_removed);
+    if (!aof_restore) {
+        handle_aof_write(cmd);
+        return get_response(INTEGER, &elem_removed);
+    } else {
+        return NULL;
+    }
+
 }
 
 // returns an integer response representing the length of the list
@@ -842,7 +912,7 @@ char * lrange_cmd(Command * cmd) {
 
 
 // returns null response
-char * ltrim_cmd(Command * cmd) {
+char * ltrim_cmd(Command * cmd, bool aof_restore) {
     errno = 0; 
 
     if (cmd->num_args < 3) {
@@ -911,11 +981,16 @@ char * ltrim_cmd(Command * cmd) {
         return error_response("Failed to trim list");
     }
 
-    return null_response();
+    if (!aof_restore) {
+        handle_aof_write(cmd);
+        return null_response();
+    } else {
+        return NULL;
+    }
 }
 
 // returns an integer response representing the number of elements updated
-char * lset_cmd(Command * cmd) {
+char * lset_cmd(Command * cmd, bool aof_restore) {
     errno = 0; 
 
     ValueType response_type = INTEGER;
@@ -974,12 +1049,17 @@ char * lset_cmd(Command * cmd) {
 
     elem_updated++;
 
-    return get_response(response_type, &elem_updated);
+    if (!aof_restore) {
+        handle_aof_write(cmd);
+        return get_response(response_type, &elem_updated);
+    } else {
+        return NULL;
+    }
 }
 
 
 // zadd key score name
-char * zadd_command(Command * cmd) {
+char * zadd_command(Command * cmd, bool aof_restore) {
     errno = 0;
 
     ValueType response_type = INTEGER;
@@ -1050,12 +1130,16 @@ char * zadd_command(Command * cmd) {
     }
     elem_added++;
 
-
-    return get_response(response_type, &elem_added);
+    if (!aof_restore) {
+        handle_aof_write(cmd);
+        return get_response(response_type, &elem_added);
+    } else {
+        return NULL;
+    }
 }
 
 // zrem key name
-char * zrem_command(Command * cmd) {
+char * zrem_command(Command * cmd, bool aof_restore) {
     errno = 0;
 
     ValueType response_type = INTEGER;
@@ -1089,7 +1173,13 @@ char * zrem_command(Command * cmd) {
 
         elem_removed++;
 
-        return get_response(response_type, &elem_removed);
+
+        if (!aof_restore) {
+            handle_aof_write(cmd);
+            return get_response(response_type, &elem_removed);
+        } else {
+            return NULL;
+        }
 }
 
 // zscore key name
@@ -1324,95 +1414,96 @@ char * zquery_cmd(Command * cmd) {
 
         return avl_iterate_response(zset->avl_tree, offset_node, limit);
     }
-
         
 }
 
-
 // execute the command and return the server response string
-char * execute_command(Command * cmd) {
+char * execute_command(Command * cmd, bool aof_restore) {
+
+    char * return_response;
+
     if (strcmp(cmd->name, "GET") == 0) {
 
-        return get_command(cmd);
+        return_response = get_command(cmd);
 
     } else if (strcmp(cmd->name, "SET") == 0) {
 
-        return set_command(cmd);
+        return_response = set_command(cmd, aof_restore);
 
     } else if (strcmp(cmd->name, "DEL") == 0) {
 
-       return del_command(cmd);
+       return_response = del_command(cmd, aof_restore);
        
     } else if (strcmp(cmd->name, "KEYS") == 0) {
 
-        return keys_command();
+        return_response = keys_command();
 
     } else if (strcmp(cmd->name, "HSET") == 0) {
             
-        return hset_command(cmd);
+        return_response = hset_command(cmd, aof_restore);
 
     } else if (strcmp(cmd->name, "HGET") == 0) {
 
-        return hget_command(cmd);
+        return_response = hget_command(cmd);
 
     } else if (strcmp(cmd->name, "HDEL") == 0) {
 
-        return hdel_command(cmd);
+        return_response = hdel_command(cmd, aof_restore);
 
     } else if (strcmp(cmd->name, "HGETALL") == 0) {
 
-        return hgetall_command(cmd);
+        return_response = hgetall_command(cmd);
 
     } else if (strcmp(cmd->name, "LPUSH")== 0) {
                 
-        return lpush_command(cmd);
+        return_response = lpush_command(cmd, aof_restore);
 
     } else if (strcmp(cmd->name, "RPUSH") == 0) {
             
-        return rpush_command(cmd);
+        return_response = rpush_command(cmd, aof_restore);
 
     } else if (strcmp(cmd->name, "LPOP") == 0) {
     
-        return lpop_command(cmd); 
+        return_response = lpop_command(cmd, aof_restore); 
     }
     else if (strcmp(cmd->name, "RPOP") == 0) {
 
-        return rpop_cmd(cmd);
+        return_response = rpop_cmd(cmd, aof_restore);
 
     } else if (strcmp(cmd->name, "LLEN") == 0) {
 
-        return llen_cmd(cmd);
+        return_response = llen_cmd(cmd);
 
     } else if (strcmp(cmd->name, "LRANGE") == 0) {
 
-        return lrange_cmd(cmd);
+        return_response = lrange_cmd(cmd);
 
     } else if (strcmp(cmd->name, "LTRIM") == 0) {
 
-        return ltrim_cmd(cmd);
+        return_response = ltrim_cmd(cmd, aof_restore);
 
     } else if (strcmp(cmd->name, "LSET") == 0) {
 
-        return lset_cmd(cmd);
+        return_response = lset_cmd(cmd, aof_restore);
 
     }
     else if (strcmp(cmd->name, "ZADD")== 0) {
             
-        return zadd_command(cmd);
+        return_response = zadd_command(cmd , aof_restore);
 
     } else if (strcmp(cmd->name, "ZREM") == 0) {
             
-        return zrem_command(cmd);
+        return_response = zrem_command(cmd, aof_restore);
 
     } else if (strcmp(cmd->name, "ZSCORE") == 0) {
 
-        return zscore_cmd(cmd); 
+        return_response = zscore_cmd(cmd); 
     }
     else if (strcmp(cmd->name, "ZQUERY") == 0) {
-        return zquery_cmd(cmd);
+        return_response = zquery_cmd(cmd);
     }
     else {
-        return error_response("Unknown command");
+        return_response = error_response("Unknown command");
     }
 
     // free the command
@@ -1421,6 +1512,32 @@ char * execute_command(Command * cmd) {
     // free all args
     for (int i = 0; i < cmd->num_args; i++) {
         free(cmd->args[i]);
+    }
+
+    // free the command
+    free(cmd);
+
+    return return_response;
+}
+
+
+void aof_restore_db() {
+    bool aof_restore = true;
+
+    // check if the AOF was initialized
+    if (!global_aof) {
+        fprintf(stderr, "AOF not initialized\n");
+        exit(EXIT_FAILURE);
+    }
+
+    // read the AOF file line by line
+    char * line;
+    while ((line = aof_read_line(global_aof)) != NULL) {
+        // parse the command
+        Command * cmd = parse_cmd_string(line, strlen(line));
+
+        // execute the command
+        execute_command(cmd, aof_restore);
     }
 
 }
@@ -1508,8 +1625,11 @@ bool try_process_single_request(Conn * conn) {
     // parse the message to extract the command
     Command * cmd = parse_cmd_string(conn->read_buffer + 4, message_size);
 
+    // aof_restore is false, since the command is not being restored from the AOF file
+    bool aof_restore = false;
+
     // execute the command, response is a null terminated byte string following the protocol
-    char * response = execute_command(cmd);
+    char * response = execute_command(cmd, aof_restore);
 
     // write response to the write buffer
     int response_size = buffer_write_response(conn->write_buffer, response);
@@ -1656,9 +1776,15 @@ void state_resp(Conn * conn) {
 // build a TCP server that listens on port 
 int main (int argc, char * argv []) {
 
-    // Initialize the global hash table
-    // global_table = hcreate(INIT_TABLE_SIZE);
-    global_table = hcreate(16);
+    // Initialize global structures
+    global_table = hcreate(INIT_TABLE_SIZE);
+    global_aof = aof_init(AOF_FILE, FLUSH_INTERVAL_SEC, "r");
+
+    // restore state of database from AOF file
+    aof_restore_db();
+
+    // change the aof back to append mode, so that new commands are appended to the file
+    aof_change_mode(global_aof, "a");
 
     // create the socket
     int server_socket= socket(AF_INET, SOCK_STREAM, 0);
