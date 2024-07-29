@@ -5,7 +5,7 @@ LiteDB is a lightweight, in-memory database inspired by Redis. It combines high-
 ## Key Features
 
 - **In-Memory Storage**: Offers rapid access to data with the option for persistence through AOF.
-- **Custom Data Structures**: Implements its own versions of hash tables and AVL trees for optimized operations.
+- **Custom Data Structures**: Implements its own versions of hash tables and AVL trees for flexibility
 - **Single-threaded Event Loop**: Similar to Redis, LiteDB operates a single-threaded event loop for handling requests, ensuring simplicity and predictability.
 - **Multithreading for Persistence**: Utilizes multithreading to flush the AOF buffer to disk, guaranteeing data durability without impacting main thread performance.
 - **Command Pipelining**: Supports pipelined commands from clients for batch processing and efficiency.

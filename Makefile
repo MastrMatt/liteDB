@@ -5,7 +5,6 @@ AVL_TREE_LIB = AVLTree/AVLTree.o
 ZSet_LIB = ZSet/ZSet.o
 list_LIB = list/list.o
 
-
 all: server client
 
 server: server.c serverHelper.o $(ZSet_LIB) $(HASH_TABLE_LIB) $(AVL_TREE_LIB)  $(list_LIB) aof.o
