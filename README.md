@@ -85,7 +85,7 @@ LiteDB supports a variety of commands across different data structures:
 - ZSCORE
 - ZQUERY:  ZQUERY key score name offset limit. 
 This command is not present in Redis, it is a general query command meant to combine various Redis Zset cmds into one.
-ZrangeByScore: ZQUERY with an (score , "")
+ZrangeByScore: ZQUERY with (score , ""), 
 Zrange by rank: ZQUERY with (-inf, "")
 
 ## Getting Started
@@ -93,6 +93,11 @@ Zrange by rank: ZQUERY with (-inf, "")
 To begin using LiteDB, follow these simple steps:
 
 1. Clone the repository.
+```
+   git clone https://github.com/MastrMatt/AITradingBot.git
+   cd lumibot-sentiment-strategy
+```
+
 2. Run `make all` to compile the source code.
 3. Start the server with `./server`.
 4. Connect to the server using the client executable `./client`.
