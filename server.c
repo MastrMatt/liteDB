@@ -334,6 +334,7 @@ char * flushall_cmd(Command * cmd, bool aof_restore) {
 
 // executes and returns a string response for the get command
 char * get_command(Command * cmd) {
+
      // check if the command has the correct number of arguments
     if (cmd->num_args != 1) {
         return error_response("get command requires 1 argument (key)");
@@ -348,8 +349,8 @@ char * get_command(Command * cmd) {
     // get the value from the hash node
     ValueType type = fetched_node->valueType;
 
-    if (type == ZSET) {
-        return error_response("ZSET values not supported for this command");
+    if (type != STRING) {
+        return error_response("Value for this key is not a string");
     }
 
     char * value = fetched_node->value;
@@ -1829,12 +1830,12 @@ int main (int argc, char * argv []) {
     int server_socket= socket(AF_INET, SOCK_STREAM, 0);
     if(server_socket);
     
-    // ! Set the socket options to allow address reuse, only for debugging
-    int optval = 1;
-    if(setsockopt(server_socket, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof(optval)) < 0) {
-        perror("setsockopt failed");
-        exit(EXIT_FAILURE);
-    };
+    // // ! Set the socket options to allow address reuse, only for debugging
+    // int optval = 1;
+    // if(setsockopt(server_socket, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof(optval)) < 0) {
+    //     perror("setsockopt failed");
+    //     exit(EXIT_FAILURE);
+    // };
 
     // define the server address
     struct sockaddr_in server_address;
