@@ -1,70 +1,124 @@
-# LiteDB
+# LiteDB: A Lightweight In-Memory Database Inspired by Redis
 
--This is an in memory database that is run on a server, it can be used as a cache and even a complete database after persistence has been implemented. The inspiration for this project was redis, attempting to build everything from scratch, even data structure like hash tables and AVL trees
+LiteDB is a lightweight, in-memory database inspired by Redis. It combines high-speed caching with the capabilities of a full-fledged database, featuring Append Only File (AOF) persistence for data durability.It is built from the ground up, including custom implementations of data structures such as hash tables and AVL trees, ensuring flexibility.
 
--Server is ran on a little endian machine
+## Key Features
 
--Client will send a command of the regular communication protocol:
+- **In-Memory Storage**: Offers rapid access to data with the option for persistence through AOF.
+- **Custom Data Structures**: Implements its own versions of hash tables and AVL trees for optimized operations.
+- **Single-threaded Event Loop**: Similar to Redis, LiteDB operates a single-threaded event loop for handling requests, ensuring simplicity and predictability.
+- **Multithreading for Persistence**: Utilizes multithreading to flush the AOF buffer to disk, guaranteeing data durability without impacting main thread performance.
+- **Command Pipelining**: Supports pipelined commands from clients for batch processing and efficiency.
+- **Flexible Data Types**: Stores most input values as strings, with support for floats in sorted sets (ZSETs).
+- **TCP Server Architecture**: Operates as a TCP server
+- **Little Endian Compatibility**: Designed to run on little endian machines for broad hardware compatibility.
+
+## Communication Protocol
+
+### Client Request Format
+
+Clients communicate with the LiteDB server using a straightforward protocol:
+
+```
 len(4 bytes): little endian integer representing the length of the msg
-msg: the cmd string to be executed, args seperated by spaces
+msg: the cmd string to be executed, args separated by spaces
 +-----+------+-----+------+--------
 | len | msg1 | len | msg2 | more...
 +-----+------+-----+------+--------
+```
 
+### Server Response Format
 
--Server will respond with a message of format:
-type(1 byte): null,err,string,arr
+The server responds with messages formatted as follows:
+
+```
+type(1 byte): null,err,string,int,float,arr  
 len(4 bytes): little endian integer representing the length of the msg
-msg: reponse msg
+msg: response msg
 
-+-----+------+-----+
-type | len | msg
-+-----+------+-----+
++-----+------+---+
+type | len | msg |
++-----+------+---+
+```
 
-for arrays: 
-+-----+------+-----+------+------+------+------+------+-----+---------+
-type | len_array | type_1 | len_1| element_1| type-2| len_2| element_2
-+-----+------+-----+------+------+------+------+------+-----+---------+
+Array responses have a slightly different format to accommodate multiple elements:
 
--LiteDB will store all values as strings except in the ZSET will be storing floats
+```
+type(1 byte): arr
+len_array: length of the array
 
--*** Whoever allocates memory should be responsible for freeing it ***
++-----+------+-----+------+------+------+------+------+-----+---------+-----
+type | len_array | type_1 | len_1| element_1| type-2| len_2 | element_2|...
++-----+------+-----+------+------+------+------+------+-----+---------+-----
+```
+
+## Supported Commands
+
+LiteDB supports a variety of commands across different data structures:
+
+### Meta Commands
+- DEL
+- KEYS
+- FLUSHALL
+
+### Strings
+- GET
+- SET
+
+### Hashtable
+- HSET
+- HGET
+- HDEL
+- HGETALL  
+
+### Lists
+- LPUSH, RPUSH
+- LPOP, RPOP
+- LLEN
+- LRANGE
+- LTRIM
+- LSET
+
+### Sorted Sets
+- ZADD
+- ZREM
+- ZSCORE
+- ZQUERY:  ZQUERY key score name offset limit. 
+This command is not present in Redis, it is a general query command meant to combine various Redis Zset cmds into one.
+ZrangeByScore: ZQUERY with an (score , "")
+Zrange by rank: ZQUERY with (-inf, "")
+
+## Getting Started
+
+To begin using LiteDB, follow these simple steps:
+
+1. Clone the repository.
+2. Run `make all` to compile the source code.
+3. Start the server with `./server`.
+4. Connect to the server using the client executable `./client`.
+
+## Planned Features
+
+- Client connection timers for idle detection and disconnection.
+- Time-to-live (TTL) for data in the global hashtable for caching purposes.
+- Automatic rewriting of the AOF file when it exceeds a certain size threshold.
 
 
-Commands currently suported:
+## Author
+Matthew Neba / [@MastrMatt](https://github.com/MastrMatt)
 
-Dealing with elements in the main hashtable:
-
-Meta:
--DEL
--KEYS
-
-Strings:
--GET
--SET
-
-Hashtable -> only stores strings:
--HSET
--HGET
--HDEL
--HGETALL  
-
-Lists:
--LPUSH, RPUSH
--LPOP, RPOP
--LLEN
--LRANGE
--LTRIM
--LSET
-
-Sorted Sets -> only stores floats, has a key for each element:
--ZADD
--ZREM
--ZSCORE
--ZQUERY: includes zrangebyscore and zrank
+## License
+This project is licensed under the [MIT License](LICENSE).
 
 
-Features to add:
--Timers for the client connections to determine if idle and kickout
--Timer for the data stored in global hashtable (TTL for caching)
--AOF rewriting when the aof file becomes too large
+## Main Sources
+
+- [Redis](https://redis.io/)
+- [Build Your Own Redis](https://build-your-own.org/redis/#table-of-contents)
+- [Redis Persistence Demystified](http://oldblog.antirez.com/post/redis-persistence-demystified.html)
+
+## Contributing
+
+Contributions to this project are welcome Please submit pull requests or open issues to discuss potential improvements or report bugs.
+
+

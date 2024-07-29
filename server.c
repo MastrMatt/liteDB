@@ -207,14 +207,36 @@ void handle_aof_write(Command * cmd) {
     }
 
     // write the final argument
+    if(cmd->num_args > 0) {
     snprintf(message + strlen(message), MAX_MESSAGE_SIZE - strlen(message) - 1, "%s\n", cmd->args[cmd->num_args - 1]);
+    }
 
     // write the command to the AOF
     aof_write(global_aof, message);
 
 }
 
+void global_table_del(char * key, char * value, ValueType type) {
+    if (type == ZSET) {
+        // free the zset contents, don't free the zset itself
+        ZSet * zset = (ZSet *) value;
+        zset_free_contents(zset);
 
+    } else if (type == HASHTABLE) {
+        // free the hashtable, don't free the hashtable itself
+        HashTable * table = (HashTable *) value;
+        hfree_table_contents(table);
+
+    } else if (type == LIST) {
+        // free the list
+        List * list = (List *) value;
+        list_free_contents(list);
+    } 
+
+    // if the key is not for a ZSET, HASHTABLE, or LIST, no need for extra cleanup, just remove the node from the global table
+    HashNode * removed_node = hremove(global_table, key);
+    hfree(removed_node);
+}
 
 // returns a string response representing the number of elements removed
 char * del_command(Command * cmd, bool aof_restore) {
@@ -223,31 +245,14 @@ char * del_command(Command * cmd, bool aof_restore) {
         return error_response("del command requires 1 argument (key)");
     }
 
-    // make sure the key is not for a ZSET
+
     HashNode * fetched_node = hget(global_table, cmd->args[0]);
     if (!fetched_node) {
         return error_response("Key not in database");
     }
 
-    if (fetched_node->valueType == ZSET) {
-        // free the zset contents, don't free the zset itself
-        ZSet * zset = (ZSet *) fetched_node->value;
-        zset_free_contents(zset);
-
-    } else if (fetched_node->valueType == HASHTABLE) {
-        // free the hashtable, don't free the hashtable itself
-        HashTable * table = (HashTable *) fetched_node->value;
-        hfree_table_contents(table);
-
-    } else if (fetched_node->valueType == LIST) {
-        // free the list
-        List * list = (List *) fetched_node->value;
-        list_free_contents(list);
-    } 
-
-    // if the key is not for a ZSET, HASHTABLE, or LIST, no need for extra cleanup, just remove the node from the global table
-    HashNode * removed_node = hremove(global_table, cmd->args[0]);
-    hfree(removed_node);
+    // execute delete
+    global_table_del(fetched_node->key, fetched_node->value, fetched_node->valueType);
 
     if (!aof_restore) {
         handle_aof_write(cmd);
@@ -303,6 +308,29 @@ char * keys_command() {
     return buffer;
 }
 
+// flush the db
+char * flushall_cmd(Command * cmd, bool aof_restore) {
+    // iterate through the hash table and free all the nodes
+    for (int i = 0; i <= global_table->mask; i++) {
+        HashNode * traverseList = global_table->nodes[i];
+
+        while (traverseList != NULL) {
+            HashNode * next = traverseList->next;
+
+            // execute delete
+            global_table_del(traverseList->key, traverseList->value, traverseList->valueType);
+
+            traverseList = next;
+        }
+    }
+
+    if (!aof_restore) {
+        handle_aof_write(cmd);
+        return null_response();
+    } else {
+        return NULL;
+    }
+}
 
 // executes and returns a string response for the get command
 char * get_command(Command * cmd) {
@@ -1437,9 +1465,13 @@ char * execute_command(Command * cmd, bool aof_restore) {
 
         return_response = keys_command();
 
+    } else if (strcmp(cmd->name, "FLUSHALL") == 0) {
+
+        return_response = flushall_cmd(cmd, aof_restore);
+        
     } else if (strcmp(cmd->name, "HSET") == 0) {
-            
-        return_response = hset_command(cmd, aof_restore);
+        
+    return_response = hset_command(cmd, aof_restore);
 
     } else if (strcmp(cmd->name, "HGET") == 0) {
 
@@ -1775,6 +1807,10 @@ void state_resp(Conn * conn) {
 // build a TCP server that listens on port 
 int main (int argc, char * argv []) {
 
+    //create aof file if it does not exist
+    FILE * file = fopen(AOF_FILE, "a");
+    fclose(file); 
+
     // Initialize global structures
     global_table = hcreate(INIT_TABLE_SIZE);
     global_aof = aof_init(AOF_FILE, FLUSH_INTERVAL_SEC, "r");
@@ -1807,10 +1843,10 @@ int main (int argc, char * argv []) {
     struct sockaddr_in server_address;
 
     server_address.sin_family = AF_INET;
-    server_address.sin_port = ntohs(SERVERPORT);
+    server_address.sin_port = htons(SERVERPORT);
 
     // allow the server to listen to all network interfaces
-    server_address.sin_addr.s_addr = ntohl(INADDR_ANY);
+    server_address.sin_addr.s_addr = htonl(INADDR_ANY);
 
 
     // bind the socket to the specified IP and port

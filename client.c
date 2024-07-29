@@ -184,12 +184,16 @@ int main() {
 
     // define the server address information
     server_address.sin_family = AF_INET;
-    server_address.sin_port = ntohs(SERVERPORT);
+    server_address.sin_port = htons(SERVERPORT);
 
     // connect to the server
-    server_address.sin_addr.s_addr = ntohl(INADDR_LOOPBACK);
+    server_address.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
 
-    printf("Connecting to server\n");
+    // get the server address in string format
+    char server_address_str[INET_ADDRSTRLEN];
+    inet_ntop(AF_INET, &server_address.sin_addr, server_address_str, INET_ADDRSTRLEN);
+
+    printf("Connecting to server at: (%s:%d)\n", server_address_str, SERVERPORT);
 
     if(connect(client_socket, (struct sockaddr *) &server_address, sizeof(server_address)) < 0) {
         perror("Connection failed");
@@ -198,7 +202,9 @@ int main() {
 
     while (1) {
         char message[200];
+
         printf("liteDB> ");
+
         fgets(message, 200, stdin);
 
         // remove the newline character
