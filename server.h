@@ -18,6 +18,7 @@
 // Zset includes AVLTree and HashTable header
 #include "ZSet/ZSet.h"
 #include "list/list.h"
+#include "aof.h"
 
 #define SERVERPORT 9000
 #define MAX_MESSAGE_SIZE 4096
@@ -63,14 +64,6 @@ typedef struct {
 } Command;
 
 
-typedef struct AOF {
-    FILE * file;
-    int flush_interval_sec;
-    
-    // mutex for file access
-    pthread_mutex_t mutex;
-} AOF;
-
 typedef enum {
     SER_NIL,
     SER_ERR,
@@ -95,12 +88,39 @@ bool try_flush_write_buffer(Conn * conn);
 void state_req(Conn * conn);
 void state_resp(Conn * conn);
 
-// aof functions
-AOF * aof_init(char * aof_file_name, int flush_interval_sec, char * mode);
-void aof_change_mode(AOF * aof, char * mode);
-void * aof_flush(void * aof);
-void aof_close(AOF * aof);
-void aof_write(AOF * aof, char * message);
-char * aof_read_line(AOF * aof);
+char * get_response( ValueType type, void * value);
+char * null_response();
+char * error_response(char * err_msg);
+char * avl_iterate_response(AVLNode * tree, AVLNode * start, long limit);
+
+Command * parse_cmd_string(char *cmd_string, int size);
+char * execute_command(Command * cmd, bool aof_restore);
+
+void global_table_del(char * key, char * value, ValueType type);
+char * del_command(Command * cmd, bool aof_restore);
+char * keys_command();
+char * flushall_cmd(Command * cmd, bool aof_restore);
+char * get_command(Command * cmd);
+char * set_command(Command * cmd, bool aof_restore);
+char * hset_command(Command * cmd, bool aof_restore);
+char * hget_command(Command * cmd);
+char * hdel_command(Command * cmd, bool aof_restore);
+char * hgetall_command(Command * cmd);
+char * lpush_command(Command * cmd, bool aof_restore);
+char * rpush_command(Command * cmd, bool aof_restore);
+char * lpop_command(Command * cmd, bool aof_restore);
+char * rpop_command(Command * cmd, bool aof_restore);
+char * llen_cmd(Command * cmd);
+char * lrange_cmd(Command * cmd);
+char * ltrim_cmd(Command * cmd, bool aof_restore);
+char * lset_cmd(Command * cmd, bool aof_restore);
+char * zadd_command(Command * cmd, bool aof_restore);
+char * zrem_command(Command * cmd, bool aof_restore);
+char * zscore_cmd(Command * cmd);
+char * zquery_cmd(Command * cmd);
+
+void aof_restore_db();
+void handle_aof_write(Command * cmd);
+
 
 #endif

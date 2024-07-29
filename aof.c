@@ -1,5 +1,4 @@
-#include "server.h"
-
+#include "aof.h"
 
 // initialize the AOF struct
 AOF * aof_init(char * aof_file_name, int flush_interval_sec, char * mode) {
@@ -27,7 +26,7 @@ AOF * aof_init(char * aof_file_name, int flush_interval_sec, char * mode) {
 }
 
 // change the mode of the file, this is useful for switching between append and read modes
-void aof_change_mode(AOF * aof, char * mode) {
+void aof_change_mode(AOF * aof, char * aof_filename, char * mode) {
     // lock the mutex
     pthread_mutex_lock(&aof->mutex);
 
@@ -35,7 +34,7 @@ void aof_change_mode(AOF * aof, char * mode) {
     fclose(aof->file);
     
     // open the file in the new mode
-    aof->file = fopen(AOF_FILE, mode);
+    aof->file = fopen(aof_filename, mode);
     if (aof->file == NULL) {
         fprintf(stderr, "Failed to open file\n");
         exit(EXIT_FAILURE);

@@ -616,8 +616,6 @@ char * hgetall_command(Command * cmd) {
     return buffer;
 }
 
-
-
 // returns an integer response representing the number of elements added
 char * lpush_command(Command * cmd, bool aof_restore) {
     ValueType response_type = INTEGER;
@@ -759,7 +757,7 @@ char * lpop_command(Command * cmd, bool aof_restore) {
 }
 
 // returns an integer response representing the number of elements removed
-char * rpop_cmd(Command * cmd, bool aof_restore) {
+char * rpop_command(Command * cmd, bool aof_restore) {
 
     int elem_removed = 0;
 
@@ -1499,7 +1497,7 @@ char * execute_command(Command * cmd, bool aof_restore) {
     }
     else if (strcmp(cmd->name, "RPOP") == 0) {
 
-        return_response = rpop_cmd(cmd, aof_restore);
+        return_response = rpop_command(cmd, aof_restore);
 
     } else if (strcmp(cmd->name, "LLEN") == 0) {
 
@@ -1803,8 +1801,7 @@ void state_resp(Conn * conn) {
     };
 }
 
-
-// build a TCP server that listens on port 
+// Event loop for the server
 int main (int argc, char * argv []) {
 
     //create aof file if it does not exist
@@ -1819,7 +1816,7 @@ int main (int argc, char * argv []) {
     aof_restore_db();
 
     // change the aof back to append mode, so that new commands are appended to the file
-    aof_change_mode(global_aof, "a");
+    aof_change_mode(global_aof, AOF_FILE, "a");
 
     // start the aof flushing thread
     int ret = pthread_create(&aof_thread, NULL, aof_flush, (void *) global_aof);
@@ -1939,5 +1936,3 @@ int main (int argc, char * argv []) {
 
     return 0;
 }
-
-

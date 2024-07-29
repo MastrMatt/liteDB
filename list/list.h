@@ -21,7 +21,6 @@ typedef struct List{
     int size;
 } List;
 
-
 List * list_init();
 
 int list_linsert(List * list, void * data, NodeType type);
