@@ -94,8 +94,8 @@ To begin using LiteDB, follow these simple steps:
 
 1. Clone the repository.
 ```
-   git clone https://github.com/MastrMatt/AITradingBot.git
-   cd lumibot-sentiment-strategy
+   git clone https://github.com/MastrMatt/LiteDB.git
+   cd LiteDB
 ```
 
 2. Run `make all` to compile the source code.
