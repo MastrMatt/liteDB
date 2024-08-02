@@ -1,12 +1,12 @@
-# LiteDB: A Lightweight In-Memory Database Inspired by Redis
+# liteDB: A Lightweight In-Memory Database Inspired by Redis
 
-LiteDB is a lightweight, in-memory database inspired by Redis. It combines high-speed caching with the capabilities of a full-fledged database, featuring Append Only File (AOF) persistence for data durability.It is built from the ground up, including custom implementations of data structures such as hash tables and AVL trees, ensuring flexibility.
+liteDB is a lightweight, in-memory database inspired by Redis. It combines high-speed caching with the capabilities of a full-fledged database, featuring Append Only File (AOF) persistence for data durability.It is built from the ground up, including custom implementations of data structures such as hash tables and AVL trees, ensuring flexibility.
 
 ## Key Features
 
 - **In-Memory Storage**: Offers rapid access to data with the option for persistence through AOF.
 - **Custom Data Structures**: Implements its own versions of hash tables and AVL trees for flexibility
-- **Single-threaded Event Loop**: Similar to Redis, LiteDB operates a single-threaded event loop for handling requests, ensuring simplicity and predictability.
+- **Single-threaded Event Loop**: Similar to Redis, liteDB operates a single-threaded event loop for handling requests, ensuring simplicity and predictability.
 - **Multithreading for Persistence**: Utilizes multithreading to flush the AOF buffer to disk, guaranteeing data durability without impacting main thread performance.
 - **Command Pipelining**: Supports pipelined commands from clients for batch processing and efficiency.
 - **Flexible Data Types**: Stores most input values as strings, with support for floats in sorted sets (ZSETs).
@@ -17,7 +17,7 @@ LiteDB is a lightweight, in-memory database inspired by Redis. It combines high-
 
 ### Client Request Format
 
-Clients communicate with the LiteDB server using a straightforward protocol:
+Clients communicate with the liteDB server using a straightforward protocol:
 
 ```
 len(4 bytes): little endian integer representing the length of the msg
@@ -54,7 +54,7 @@ type | len_array | type_1 | len_1| element_1| type-2| len_2 | element_2|...
 
 ## Supported Commands
 
-LiteDB supports a variety of commands across different data structures:
+liteDB supports a variety of commands across different data structures:
 
 ### Meta Commands
 - DEL
@@ -90,7 +90,7 @@ Zrange by rank: ZQUERY with (-inf, "")
 
 ## Getting Started
 
-To begin using LiteDB, follow these simple steps:
+To begin using liteDB, follow these simple steps:
 
 1. Clone the repository.
 ```
