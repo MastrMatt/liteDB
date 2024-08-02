@@ -6,7 +6,7 @@ liteDB is a lightweight, in-memory database inspired by Redis. It combines high-
 
 - **In-Memory Storage**: Offers rapid access to data with the option for persistence through AOF.
 - **Custom Data Structures**: Implements its own versions of hash tables and AVL trees for flexibility
-- **Single-threaded Event Loop**: Similar to Redis, liteDB operates a single-threaded event loop for handling requests, ensuring simplicity and predictability.
+- **Single-threaded Event Loop**: Similar to Redis, LiteDB operates a single-threaded event loop with IO multiplexing for handling requests, minimizing thread creation overhead and improved performance
 - **Multithreading for Persistence**: Utilizes multithreading to flush the AOF buffer to disk, guaranteeing data durability without impacting main thread performance.
 - **Command Pipelining**: Supports pipelined commands from clients for batch processing and efficiency.
 - **Flexible Data Types**: Stores most input values as strings, with support for floats in sorted sets (ZSETs).
@@ -94,8 +94,8 @@ To begin using liteDB, follow these simple steps:
 
 1. Clone the repository.
 ```
-   git clone https://github.com/MastrMatt/AITradingBot.git
-   cd lumibot-sentiment-strategy
+   git clone https://github.com/MastrMatt/LiteDB.git
+   cd LiteDB
 ```
 
 2. Run `make all` to compile the source code.
