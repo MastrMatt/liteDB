@@ -67,16 +67,15 @@ void * aof_flush(void * aof) {
 
 // ensure the file is closed and the mutex is destroyed
 void aof_close(AOF * aof) {
-
     // wait for the mutex to be unlocked, to ensure no other thread is using the file
     pthread_mutex_lock(&aof->mutex);
 
-    // close the file
+    // close the file resources
     fclose(aof->file);
-    free(aof);
-
-    // destroy the mutex
     pthread_mutex_destroy(&aof->mutex);
+    
+    // free aof
+    free(aof);
 }
 
 // write to the file
