@@ -1,16 +1,19 @@
-# include "hashTable.c"
+#include "hashTable.c"
 
 // time to test the hashtable
-int main() {
-    HashTable * table = hcreate(16);
-    if (table == NULL) {
+int main()
+{
+    HashTable *table = hcreate(16);
+    if (table == NULL)
+    {
         fprintf(stderr, "Failed to create hashtable\n");
         return 1;
     }
 
     // * since enum ValueType of string has a value of 0, calloc will initialize the value to 0
-    HashNode * node = calloc(sizeof(HashNode), 1);
-    if (node == NULL) {
+    HashNode *node = calloc(sizeof(HashNode), 1);
+    if (node == NULL)
+    {
         fprintf(stderr, "Memory allocation failed\n");
         return 1;
     }
@@ -18,7 +21,8 @@ int main() {
     node->key = calloc(sizeof(char), 5);
     node->value = calloc(sizeof(char), 6);
 
-    if (node->key == NULL || node->value == NULL) {
+    if (node->key == NULL || node->value == NULL)
+    {
         fprintf(stderr, "Memory allocation failed\n");
         return 1;
     }
@@ -30,32 +34,35 @@ int main() {
 
     hinsert(table, node);
 
-    HashNode * result = hget(table, "key1");
-    if (result == NULL) {
+    HashNode *result = hget(table, "key1");
+    if (result == NULL)
+    {
         return 1;
     }
 
-    if (strcmp(result->value, "value1") != 0) {
+    if (strcmp(result->value, "value1") != 0)
+    {
         fprintf(stderr, "Test 1 (Create and Insert One Node) failed\n");
         return 1;
     }
 
     // insert another node
-    HashNode * node2 = calloc(sizeof(HashNode), 1);
-    if (node2 == NULL) {
+    HashNode *node2 = calloc(sizeof(HashNode), 1);
+    if (node2 == NULL)
+    {
         fprintf(stderr, "Memory allocation failed\n");
         return 1;
     }
 
     node2->key = calloc(sizeof(char), 5);
 
-    if (node2->key == NULL) {
+    if (node2->key == NULL)
+    {
         fprintf(stderr, "Memory allocation failed\n");
         return 1;
     }
 
     node2->value = calloc(sizeof(char), 7);
-
 
     strcpy(node2->key, "key20");
     strcpy(node2->value, "value2");
@@ -65,18 +72,21 @@ int main() {
     hinsert(table, node2);
 
     result = hget(table, "key20");
-    if (result == NULL) {
+    if (result == NULL)
+    {
         return 1;
     }
 
-    if (strcmp(result->value, "value2") != 0) {
+    if (strcmp(result->value, "value2") != 0)
+    {
         fprintf(stderr, "Test 2 failed (Insert 2 nodes to one slot)\n");
         return 1;
-    }    
+    }
 
-    HashNode * node3 = calloc(sizeof(HashNode), 1);
+    HashNode *node3 = calloc(sizeof(HashNode), 1);
 
-    if (node3 == NULL) {
+    if (node3 == NULL)
+    {
         fprintf(stderr, "Memory allocation failed\n");
         return 1;
     }
@@ -84,7 +94,8 @@ int main() {
     node3->key = calloc(sizeof(char), 5);
     node3->value = calloc(sizeof(char), 7);
 
-    if (node3->key == NULL || node3->value == NULL) {
+    if (node3->key == NULL || node3->value == NULL)
+    {
         fprintf(stderr, "Memory allocation failed\n");
         return 1;
     }
@@ -101,21 +112,24 @@ int main() {
     hremove(table, "key20");
 
     result = hget(table, "key20");
-    if (result != NULL) {
+    if (result != NULL)
+    {
         fprintf(stderr, "Test 3 failed (Delete a node from a 2 slot spot)\n");
         return 1;
     }
 
     // reinsert node2
     node2 = calloc(sizeof(HashNode), 1);
-    if (node2 == NULL) {
+    if (node2 == NULL)
+    {
         fprintf(stderr, "Memory allocation failed\n");
         return 1;
     }
 
     node2->key = calloc(sizeof(char), 5);
 
-    if (node2->key == NULL) {
+    if (node2->key == NULL)
+    {
         fprintf(stderr, "Memory allocation failed\n");
         return 1;
     }
@@ -138,7 +152,8 @@ int main() {
     int oldSize = table->size;
     table = hresize(table);
 
-    if (oldSize != table->size || table->mask != 31) {
+    if (oldSize != table->size || table->mask != 31)
+    {
         fprintf(stderr, "Test 4 (Resizing hashtable) failed\n");
         return 1;
     }

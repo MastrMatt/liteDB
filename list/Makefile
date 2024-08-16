@@ -1,5 +1,6 @@
 CC = gcc
-CC_FLAGS = -Wall -g
+CC_FLAGS = -Wall -Werror -g
+
 
 all: test list.o
 

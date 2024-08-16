@@ -1,16 +1,17 @@
 // test the Zset
 #include "ZSet.h"
 
-int main () {
-    ZSet * zset =  zset_init();
+int main()
+{
+    ZSet *zset = zset_init();
 
-    char * key1 = "key1";
-    char * key2 = "key2";
-    char * key3 = "key3";
-    char * key4 = "key4";
-    char * key5 = "key5";   
-    char * key6 = "key6";
-    char * key7 = "key7";
+    char *key1 = "key1";
+    char *key2 = "key2";
+    char *key3 = "key3";
+    char *key4 = "key4";
+    char *key5 = "key5";
+    char *key6 = "key6";
+    char *key7 = "key7";
 
     zset_add(zset, key1, 1.0);
     zset_add(zset, key2, 3.0);
@@ -21,15 +22,17 @@ int main () {
     zset_add(zset, key7, 0.0);
 
     // search for a key
-    HashNode * hash_node = zset_search_by_key(zset, "key1");
-    if (!hash_node) {
+    HashNode *hash_node = zset_search_by_key(zset, "key1");
+    if (!hash_node)
+    {
         fprintf(stderr, "key not found\n");
         exit(EXIT_FAILURE);
     }
 
     // test delete
     zset_remove(zset, "key1");
-    if (zset_search_by_key(zset, "key1")) {
+    if (zset_search_by_key(zset, "key1"))
+    {
         fprintf(stderr, "key not deleted\n");
         exit(EXIT_FAILURE);
     }
@@ -39,4 +42,3 @@ int main () {
 
     zset_print(zset);
 }
-

@@ -1,5 +1,5 @@
 CC = gcc
-CC_FLAGS = -Wall -g
+CC_FLAGS = -Wall -Werror -g
 HASH_TABLE_LIB = hashTable/hashTable.o
 AVL_TREE_LIB = AVLTree/AVLTree.o
 ZSet_LIB = ZSet/ZSet.o
