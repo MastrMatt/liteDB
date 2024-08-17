@@ -1,3 +1,4 @@
+
 #include "server.h"
 
 // Global structures
@@ -341,7 +342,7 @@ void global_table_del(char *key, char *value, ValueType type)
 /**
  * @brief Deletes a key-value pair from the global table and handles AOF logging if necessary.
  *
- * @param cmd Command structure containing the key to be deleted.
+ * @param cmd Command structure containing the (key)
  * @param aof_restore Flag indicating whether to log the deletion to the AOF file.
  *
  * @return char* A string response indicating the number of elements removed, or NULL if AOF restore is enabled.
@@ -467,7 +468,7 @@ char *flushall_cmd(Command *cmd, bool aof_restore)
 /**
  * @brief Executes a GET command and returns the corresponding response string according to the liteDB protocol.
  *
- * @param cmd Command structure specifying the key to retrieve.
+ * @param cmd Command structure specifying the (key)
  *
  * @return char* response
  */
@@ -500,9 +501,17 @@ char *get_command(Command *cmd)
     return get_response(type, value);
 }
 
-// ! Also try to organize and group functions that are related to each other
-
 // returns null response for the set command
+
+/**
+ * @brief Executes a SET command and optionally logs the action to the AOF file. All values are stored as strings in the global hashtable.
+ *
+ * @param cmd Command structure specifying the (key, value)
+ * @param aof_restore Flag indicating whether to log the SET operation to the AOF file.
+ *
+ * @return char* response if AOF restore is disabled, or NULL otherwise.
+ *
+ */
 char *set_command(Command *cmd, bool aof_restore)
 {
 
@@ -537,8 +546,16 @@ char *set_command(Command *cmd, bool aof_restore)
     }
 }
 
-// hashtable only store strings in this db
-// returns a string response representing the number of elements added/updated
+/**
+ * @brief Executes an HSET command and optionally logs the action to the AOF file.
+ *
+ * The HSET (key, field, value) command sets the value of a key in a hash table. If the key does not exist, a new hash table is created. Returns a response which containts the number of elements added/updated.
+ *
+ * @param cmd Command structure specifying the (key, field, value)
+ * @param aof_restore Flag indicating whether to log the HSET operation to the AOF file.
+ *
+ * @return char* response if AOF restore is disabled, or NULL otherwise.
+ */
 char *hset_command(Command *cmd, bool aof_restore)
 {
 
@@ -618,7 +635,15 @@ char *hset_command(Command *cmd, bool aof_restore)
     }
 }
 
-// returns a string response for the hget command
+/**
+ * @brief Executes an HGET command and returns the corresponding response string according to the liteDB protocol.
+ *
+ * The HGET command retrieves the value of a field in a hash table. Returns an error response if the key or field does not exist.
+ *
+ * @param cmd Command structure specifying the (key, field)
+ *
+ * @return char* response
+ */
 char *hget_command(Command *cmd)
 {
     if (cmd->num_args < 2)
@@ -654,7 +679,16 @@ char *hget_command(Command *cmd)
     return get_response(ret_node->valueType, ret_node->value);
 }
 
-// returns an integer response representing the number of elements removed
+/**
+ * @brief Executes an HDEL command and optionally logs the action to the AOF file.
+ *
+ * The HDEL command removes a field from a hash table. Returns an integer response indicating the number of elements removed.
+ *
+ * @param cmd Command structure specifying the (key, field)
+ * @param aof_restore Flag indicating whether to log the HDEL operation to the AOF file.
+ *
+ * @return char* response if AOF restore is disabled, or NULL otherwise.
+ */
 char *hdel_command(Command *cmd, bool aof_restore)
 {
 
@@ -707,7 +741,15 @@ char *hdel_command(Command *cmd, bool aof_restore)
     }
 }
 
-// returns a protocol string, which contains an array of all the keys and values in the hash table
+/**
+ * @brief Executes an HGETALL command and returns the corresponding response string according to the liteDB protocol.
+ *
+ * The HGETALL command retrieves all fields and values in a hash table. Returns an error response if the key does not exist.
+ *
+ * @param cmd Command structure specifying (key)
+ *
+ * @return char* response
+ */
 char *hgetall_command(Command *cmd)
 {
     if (cmd->num_args < 1)
@@ -801,6 +843,16 @@ char *hgetall_command(Command *cmd)
 }
 
 // returns an integer response representing the number of elements added
+/**
+ * @brief Executes an LPUSH command and optionally logs the action to the AOF file.
+ *
+ * The LPUSH command adds a value to the head of a list. If the key does not exist, a new list is created. Returns an integer response indicating the number of elements added.
+ *
+ * @param cmd Command structure specifying (key)
+ * @param aof_restore Flag indicating whether to log the LPUSH operation to the AOF file.
+ *
+ * @return char* response if AOF restore is disabled, or NULL otherwise.
+ */
 char *lpush_command(Command *cmd, bool aof_restore)
 {
     ValueType response_type = INTEGER;
@@ -860,7 +912,16 @@ char *lpush_command(Command *cmd, bool aof_restore)
     }
 }
 
-// returns an integer response representing the number of elements added
+/**
+ * @brief Executes an RPUSH command and optionally logs the action to the AOF file.
+ *
+ * The RPUSH command adds a value to the tail of a list. If the key does not exist, a new list is created. Returns an integer response indicating the number of elements added.
+ *
+ * @param cmd Command structure specifying the (key)
+ * @param aof_restore Flag indicating whether to log the RPUSH operation to the AOF file.
+ *
+ * @return char* response if AOF restore is disabled, or NULL otherwise.
+ */
 char *rpush_command(Command *cmd, bool aof_restore)
 {
     ValueType response_type = INTEGER;
@@ -912,7 +973,16 @@ char *rpush_command(Command *cmd, bool aof_restore)
     return get_response(response_type, &elem_added);
 }
 
-// returns an integer response representing the number of elements removed
+/**
+ * @brief Executes an LPOP command and optionally logs the action to the AOF file.
+ *
+ * The LPOP command removes a value from the head of a list. Returns an integer response indicating the number of elements removed.
+ *
+ * @param cmd Command structure specifying the (key)
+ * @param aof_restore Flag indicating whether to log the LPOP operation to the AOF file.
+ *
+ * @return char* response if AOF restore is disabled, or NULL otherwise.
+ */
 char *lpop_command(Command *cmd, bool aof_restore)
 {
 
@@ -960,7 +1030,16 @@ char *lpop_command(Command *cmd, bool aof_restore)
     }
 }
 
-// returns an integer response representing the number of elements removed
+/**
+ * @brief Executes an RPOP command and optionally logs the action to the AOF file.
+ *
+ * The RPOP command removes a value from the tail of a list. Returns an integer response indicating the number of elements removed.
+ *
+ * @param cmd Command structure specifying the (key)
+ * @param aof_restore Flag indicating whether to log the RPOP operation to the AOF file.
+ *
+ * @return char* response if AOF restore is disabled, or NULL otherwise.
+ */
 char *rpop_command(Command *cmd, bool aof_restore)
 {
 
@@ -1008,7 +1087,15 @@ char *rpop_command(Command *cmd, bool aof_restore)
     }
 }
 
-// returns an integer response representing the length of the list
+/**
+ * @brief Executes an LLEN command and returns the corresponding response string according to the liteDB protocol.
+ *
+ * The LLEN command returns the length of a list. Returns an integer response indicating the number of elements in the list.
+ *
+ * @param cmd Command structure specifying the (key)
+ *
+ * @return char* response
+ */
 char *llen_cmd(Command *cmd)
 {
     int len = 0;
@@ -1041,7 +1128,15 @@ char *llen_cmd(Command *cmd)
     return get_response(INTEGER, &len);
 }
 
-// returns a protocol string, which contains an array of all the elements in the range
+/**
+ * @brief Executes an LRANGE command and returns the corresponding response string according to the liteDB protocol.
+ *
+ * The LRANGE command retrieves a range of elements from a list. Returns an array response containing the elements in the specified range.
+ *
+ * @param cmd Command structure specifying the (key, start, stop)
+ *
+ * @return char* response
+ */
 char *lrange_cmd(Command *cmd)
 {
     errno = 0;
@@ -1162,7 +1257,16 @@ char *lrange_cmd(Command *cmd)
     return buffer;
 }
 
-// returns null response
+/**
+ * @brief Executes an LTRIM command and optionally logs the action to the AOF file.
+ *
+ * The LTRIM command trims a list to the specified range. Returns a null response if the operation is successful.
+ *
+ * @param cmd Command structure specifying the (key, start, stop)
+ * @param aof_restore Flag indicating whether to log the LTRIM operation to the AOF file.
+ *
+ * @return char* response if AOF restore is disabled, or NULL otherwise.
+ */
 char *ltrim_cmd(Command *cmd, bool aof_restore)
 {
     errno = 0;
@@ -1253,7 +1357,16 @@ char *ltrim_cmd(Command *cmd, bool aof_restore)
     }
 }
 
-// returns an integer response representing the number of elements updated
+/**
+ * @brief Executes an LSET command and optionally logs the action to the AOF file.
+ *
+ * The LSET command sets the value of an element in a list. Returns an integer response indicating the number of elements updated.
+ *
+ * @param cmd Command structure specifying the (key, index, value)
+ * @param aof_restore Flag indicating whether to log the LSET operation to the AOF file.
+ *
+ * @return char* response if AOF restore is disabled, or NULL otherwise.
+ */
 char *lset_cmd(Command *cmd, bool aof_restore)
 {
     errno = 0;
@@ -1332,7 +1445,17 @@ char *lset_cmd(Command *cmd, bool aof_restore)
     }
 }
 
-// zadd key score name
+/**
+ * @brief Executes a ZADD command and optionally logs the action to the AOF file.
+ *
+ * The ZADD (key, score, name) command adds a value to a sorted set. If the key does not exist, a new sorted set is created. If the field already exists, it is updated instead. Returns an integer response indicating the number of elements added/updated.
+ *
+ * @param cmd Command structure specifying the (key, score, name)
+ * @param aof_restore Flag indicating whether to log the ZADD operation to the AOF file.
+ *
+ * @return char* response if AOF restore is disabled, or NULL otherwise.
+
+ */
 char *zadd_command(Command *cmd, bool aof_restore)
 {
     errno = 0;
@@ -1425,7 +1548,14 @@ char *zadd_command(Command *cmd, bool aof_restore)
     }
 }
 
-// zrem key name
+/**
+ * @brief Executes a ZREM command and optionally logs the action to the AOF file.
+ *
+ * The ZREM command removes a value from a sorted set. Returns an integer response indicating the number of elements removed.
+ *
+ * @param cmd Command structure specifying the (key, name)
+ * @param aof_restore Flag indicating whether to log the ZREM operation to the AOF file.
+ */
 char *zrem_command(Command *cmd, bool aof_restore)
 {
     errno = 0;
@@ -1476,8 +1606,15 @@ char *zrem_command(Command *cmd, bool aof_restore)
     }
 }
 
-// zscore key name
-//
+/**
+ * @brief Executes a ZSCORE command and returns the corresponding response string according to the liteDB protocol.
+ *
+ * The ZSCORE command retrieves the score of a field in a sorted set. Returns a float response indicating the score of the field.
+ *
+ * @param cmd Command structure specifying the  (key, name)
+ *
+ * @return char* response
+ */
 char *zscore_cmd(Command *cmd)
 {
     errno = 0;
@@ -1527,6 +1664,17 @@ char *zscore_cmd(Command *cmd)
     return get_response(response_type, &score);
 }
 
+/**
+ * @brief Generates an array response for a range of avl nodes in a sorted set.
+ *
+ * The function generates an array response containing a range keys and scores in the AVL tree. The range is determined by the start node and the limit. Elements are ordered by thier rank in the AVL tree.
+ *
+ * @param tree AVL tree to iterate through
+ * @param start Starting node in the AVL tree
+ * @param limit Maximum number of elements to return
+ *
+ * @return char* response
+ */
 char *avl_iterate_response(AVLNode *tree, AVLNode *start, long limit)
 {
     int num_elements = 0;
@@ -1593,7 +1741,15 @@ char *avl_iterate_response(AVLNode *tree, AVLNode *start, long limit)
     return buffer;
 }
 
-// zquery key score name offset limit
+/**
+ * @brief Executes a ZQUERY command and returns the corresponding response string according to the liteDB protocol.
+ *
+ * The ZQUERY command retrieves a range of elements from a sorted set. Returns an array response containing the elements in the specified range.
+ *
+ * @param cmd Command structure specifying the (key, score, name, offset, limit)
+ *
+ * @return char* response
+ */
 char *zquery_cmd(Command *cmd)
 {
     errno = 0;
@@ -1734,113 +1890,122 @@ char *zquery_cmd(Command *cmd)
     }
 }
 
-// execute the command and return the server response string
+/**
+ * @brief Executes a command and returns the corresponding response string according to the liteDB protocol.
+ *
+ * The function executes a command and returns the corresponding response string according to the liteDB protocol. The function also handles logging the command to the AOF file if the aof_restore flag is set.
+ *
+ * @param cmd Command structure specifying the command to execute
+ * @param aof_restore Flag indicating whether to log the command to the AOF file
+ *
+ * @return char* response
+ */
 char *execute_command(Command *cmd, bool aof_restore)
 {
 
     char *return_response;
 
-    if (strcmp(cmd->name, "GET") == 0)
+    if (strcmp(cmd->name, "get") == 0)
     {
 
         return_response = get_command(cmd);
     }
-    else if (strcmp(cmd->name, "SET") == 0)
+    else if (strcmp(cmd->name, "set") == 0)
     {
 
         return_response = set_command(cmd, aof_restore);
     }
-    else if (strcmp(cmd->name, "DEL") == 0)
+    else if (strcmp(cmd->name, "del") == 0)
     {
 
         return_response = del_command(cmd, aof_restore);
     }
-    else if (strcmp(cmd->name, "KEYS") == 0)
+    else if (strcmp(cmd->name, "keys") == 0)
     {
 
         return_response = keys_command();
     }
-    else if (strcmp(cmd->name, "FLUSHALL") == 0)
+    else if (strcmp(cmd->name, "flushall") == 0)
     {
 
         return_response = flushall_cmd(cmd, aof_restore);
     }
-    else if (strcmp(cmd->name, "HSET") == 0)
+    else if (strcmp(cmd->name, "hset") == 0)
     {
 
         return_response = hset_command(cmd, aof_restore);
     }
-    else if (strcmp(cmd->name, "HGET") == 0)
+    else if (strcmp(cmd->name, "hget") == 0)
     {
 
         return_response = hget_command(cmd);
     }
-    else if (strcmp(cmd->name, "HDEL") == 0)
+    else if (strcmp(cmd->name, "hdel") == 0)
     {
 
         return_response = hdel_command(cmd, aof_restore);
     }
-    else if (strcmp(cmd->name, "HGETALL") == 0)
+    else if (strcmp(cmd->name, "hgetall") == 0)
     {
 
         return_response = hgetall_command(cmd);
     }
-    else if (strcmp(cmd->name, "LPUSH") == 0)
+    else if (strcmp(cmd->name, "lpush") == 0)
     {
 
         return_response = lpush_command(cmd, aof_restore);
     }
-    else if (strcmp(cmd->name, "RPUSH") == 0)
+    else if (strcmp(cmd->name, "rpush") == 0)
     {
 
         return_response = rpush_command(cmd, aof_restore);
     }
-    else if (strcmp(cmd->name, "LPOP") == 0)
+    else if (strcmp(cmd->name, "lpop") == 0)
     {
 
         return_response = lpop_command(cmd, aof_restore);
     }
-    else if (strcmp(cmd->name, "RPOP") == 0)
+    else if (strcmp(cmd->name, "rpop") == 0)
     {
 
         return_response = rpop_command(cmd, aof_restore);
     }
-    else if (strcmp(cmd->name, "LLEN") == 0)
+    else if (strcmp(cmd->name, "llen") == 0)
     {
 
         return_response = llen_cmd(cmd);
     }
-    else if (strcmp(cmd->name, "LRANGE") == 0)
+    else if (strcmp(cmd->name, "lrange") == 0)
     {
 
         return_response = lrange_cmd(cmd);
     }
-    else if (strcmp(cmd->name, "LTRIM") == 0)
+    else if (strcmp(cmd->name, "ltrim") == 0)
     {
 
         return_response = ltrim_cmd(cmd, aof_restore);
     }
-    else if (strcmp(cmd->name, "LSET") == 0)
+    else if (strcmp(cmd->name, "lset") == 0)
     {
 
         return_response = lset_cmd(cmd, aof_restore);
     }
-    else if (strcmp(cmd->name, "ZADD") == 0)
+    else if (strcmp(cmd->name, "zadd") == 0)
     {
 
         return_response = zadd_command(cmd, aof_restore);
     }
-    else if (strcmp(cmd->name, "ZREM") == 0)
+    else if (strcmp(cmd->name, "zrem") == 0)
     {
 
         return_response = zrem_command(cmd, aof_restore);
     }
-    else if (strcmp(cmd->name, "ZSCORE") == 0)
+    else if (strcmp(cmd->name, "zscore") == 0)
     {
 
         return_response = zscore_cmd(cmd);
     }
-    else if (strcmp(cmd->name, "ZQUERY") == 0)
+    else if (strcmp(cmd->name, "zquery") == 0)
     {
         return_response = zquery_cmd(cmd);
     }
@@ -1864,6 +2029,11 @@ char *execute_command(Command *cmd, bool aof_restore)
     return return_response;
 }
 
+/**
+ * @brief Restores the database state from the AOF file.
+ *
+ * The function reads the AOF file line by line and executes the commands to restore the database state. The function is called when the server starts up.
+ */
 void aof_restore_db()
 {
     bool aof_restore = true;
@@ -1890,7 +2060,16 @@ void aof_restore_db()
     }
 }
 
-// response is a byte string that follows the protocol, returns the number of bytes written to the buffer
+/**
+ * @brief Writes a response to a buffer following the liteDB protocol.
+ *
+ * The function writes a response to a buffer following the liteDB protocol. The response is a byte string that follows the protocol. The function returns the number of bytes written to the buffer.
+ *
+ * @param buffer Buffer to write the response to
+ * @param response Response to write to the buffer
+ *
+ * @return int number of bytes written to the buffer
+ */
 int buffer_write_response(char *buffer, char *response)
 {
 
@@ -1947,6 +2126,13 @@ int buffer_write_response(char *buffer, char *response)
     }
 }
 
+/**
+ * @brief Attempts to process a single request from a connection.
+ *
+ * The function attempts to process a single request from a connection. The function checks if the read buffer of the connection has enough data to process a request. If the read buffer has enough data, the function processes the request and writes the response to the write buffer. The function returns true if the request was fully processed and sent to the connection, and false otherwise.
+ *
+ * @param conn Connection structure to handle
+ */
 bool try_process_single_request(Conn *conn)
 {
     // check if the read buffer has enough data to process a request
@@ -2013,6 +2199,15 @@ bool try_process_single_request(Conn *conn)
     return (conn->state == STATE_REQ);
 }
 
+/**
+ * @brief Attempts to fill the read buffer of a connection.
+ *
+ * The function attempts to fill the read buffer of a connection. The function reads from the socket and fills the read buffer of the connection. The function returns false to indicate to that the attempt to read any characters into the buffer was unsuccessful or that the connection is waiting for a response, and true otherwise.
+ *
+ * @param conn Connection structure to handle
+ *
+ * @return bool indicating if this function should be called again in the while loop of state_req()
+ */
 bool try_fill_read_buffer(Conn *conn)
 {
     // check if the read buffer overflowed
@@ -2080,6 +2275,15 @@ bool try_fill_read_buffer(Conn *conn)
     return (conn->state == STATE_REQ);
 }
 
+/**
+ * @brief Attempts to flush the write buffer of a connection.
+ *
+ * The function attempts to flush the write buffer of a connection. The function writes to the socket and flushes the write buffer of the connection. The function returns false to indicate that the attempt to write any characters into the buffer was unsuccessful or that the connection is waiting for a request, and true otherwise.
+ *
+ * @param conn Connection structure to handle
+ *
+ * @return bool indicating if this function should be called again in the while loop of state_resp()
+ */
 bool try_flush_write_buffer(Conn *conn)
 {
 
@@ -2130,6 +2334,13 @@ bool try_flush_write_buffer(Conn *conn)
     return true;
 }
 
+/**
+ * @brief Handles the request state of a connection.
+ *
+ * The function handles the request state of a connection. Calls try_fill_read_buffer() repeatedly.
+ *
+ * @param conn Connection structure to handle
+ */
 void state_req(Conn *conn)
 {
     while (try_fill_read_buffer(conn))
@@ -2137,6 +2348,13 @@ void state_req(Conn *conn)
     };
 }
 
+/**
+ * @brief Handles the response state of a connection.
+ *
+ * The function handles the response state of a connection. Calls try_flush_write_buffer() repeatedly.
+ *
+ * @param conn Connection structure to handle
+ */
 void state_resp(Conn *conn)
 {
     while (try_flush_write_buffer(conn))
@@ -2144,6 +2362,13 @@ void state_resp(Conn *conn)
     };
 }
 
+/**
+ * @ Handles the clean up of the server when a SIGINT signal is received.
+ *
+ * The function handles the clean up of the server when a SIGINT signal is received. The function closes the server socket, all client connections, frees the global table, closes the AOF file, and exits the program.
+ *
+ * @param signum Signal number
+ */
 void handle_sigint()
 {
     // close the server socket

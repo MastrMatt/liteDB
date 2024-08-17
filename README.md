@@ -11,6 +11,10 @@ liteDB is a lightweight, in-memory database inspired by Redis. It combines cachi
 - **Command Pipelining**: Supports pipelined commands from clients for batch processing and efficiency.
 - **TCP Server Architecture**: Operates as a TCP server
 
+## Database Structure
+
+- All data in liteDB are stored as strings, except for the ZSET values which are stored as floats
+
 ## Communication Protocol
 
 ### Client Request Format
@@ -56,40 +60,40 @@ liteDB supports a variety of commands across different data structures:
 
 ### Meta Commands
 
-- DEL
+- DEL: (key)
 - KEYS
 - FLUSHALL
 
 ### Strings
 
-- GET
-- SET
+- GET: (key)
+- SET: (key, value)
 
 ### Hashtable
 
-- HSET
-- HGET
-- HDEL
-- HGETALL
+- HSET: (key, field, value)
+- HGET: (key, field)
+- HDEL: (key, field)
+- HGETALL: (key)
 
 ### Lists
 
-- LPUSH, RPUSH
-- LPOP, RPOP
-- LLEN
-- LRANGE
-- LTRIM
-- LSET
+- LPUSH, RPUSH: (key)
+- LPOP, RPOP: (key)
+- LLEN: (key)
+- LRANGE: (key, start, stop)
+- LTRIM: (key, start, stop)
+- LSET: (key, index, value)
 
 ### Sorted Sets
 
-- ZADD
-- ZREM
-- ZSCORE
-- ZQUERY: ZQUERY key score name offset limit.
+- ZADD: (key, score, name)
+- ZREM: (key, name)
+- ZSCORE: (key, name)
+- ZQUERY: (key score name offset limit)
   This command is not present in Redis, it is a general query command meant to combine various Redis Zset cmds into one.
-  ZrangeByScore: ZQUERY with (score , ""),
-  Zrange by rank: ZQUERY with (-inf, "")
+  ZrangeByScore: ZQUERY with (key score "" offset limit),
+  Zrange by rank: ZQUERY with (key -inf "" offset limit)
 
 ## Getting Started
 
