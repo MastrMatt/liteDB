@@ -1,5 +1,12 @@
 #include "server.h"
 
+/**
+ * @brief Processes the server response according to the liteDB protocol
+ * 
+ * @param confd the client socket file descriptor
+ * 
+ * @return int 0 on success, -1 on error
+ */
 int process_server_response(int confd)
 {
     char buffer[5 + MAX_MESSAGE_SIZE];
@@ -162,6 +169,14 @@ int process_server_response(int confd)
     }
 }
 
+/**
+ * @brief Sends a request to the server and processes the response
+ *
+ * @param confd the client socket file descriptor
+ * @param message the message to send to the server
+ *
+ * @return int 0 on success, -1 on error
+ */
 int handle_request(int confd, char *message)
 {
     char buffer[4 + MAX_MESSAGE_SIZE + 1];
