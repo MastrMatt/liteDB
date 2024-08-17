@@ -1,4 +1,4 @@
-#include "hashTable.c"
+#include "hashTable.h"
 
 // time to test the hashtable
 int main()

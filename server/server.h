@@ -16,14 +16,13 @@
 #include <pthread.h>
 #include <signal.h>
 
-// Zset includes AVLTree and HashTable header
-#include "ZSet/ZSet.h"
-#include "list/list.h"
-#include "aof.h"
+// protocol header
+#include "../protocol.h"
 
-#define SERVERPORT 9000
-#define MAX_MESSAGE_SIZE 4096
-#define MAX_CLIENTS 2047
+// Zset includes AVLTree and HashTable header
+#include "../ZSet/ZSet.h"
+#include "../list/list.h"
+#include "../aof/aof.h"
 
 // persistent storage
 #define AOF_FILE "AOF.aof"
@@ -31,9 +30,6 @@
 
 // should be multiple of two
 #define INIT_TABLE_SIZE 1024
-
-// Protocol information
-#define MAX_ARGS 10
 
 // variables/structs for the event loop
 enum Conn_State
@@ -66,23 +62,8 @@ typedef struct
 
 } Command;
 
-typedef enum
-{
-    SER_NIL,
-    SER_ERR,
-    SER_STR,
-    SER_INT,
-    SER_FLOAT,
-    SER_ARR,
-
-} SerialType;
-
-// helper functions
-int read_tcp_socket(int fd, char *buffer, int size);
-int write_tcp_socket(int fd, char *buffer, int size);
-void set_fd_nonblocking(int fd);
-
 // server functions
+void set_fd_nonblocking(int fd);
 int accept_new_connection(Conn *fd2conn[], int server_socket);
 void connection_io(Conn *conn);
 bool try_process_single_request(Conn *conn);
@@ -124,5 +105,12 @@ char *zquery_cmd(Command *cmd);
 
 void aof_restore_db();
 void handle_aof_write(Command *cmd);
+
+// Global variables (usually avoid, but okay here since no function depends on a specific state of the global table or aof, behaves)
+extern HashTable *global_table;
+extern AOF *global_aof;
+extern pthread_t aof_thread;
+extern int server_socket;
+extern Conn *fd2conn[MAX_CLIENTS];
 
 #endif

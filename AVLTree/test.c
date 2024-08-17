@@ -1,4 +1,4 @@
-#include "AVLTree.c"
+#include "AVLTree.h"
 
 // in this AVLTree implementation, the secondary index is a string
 int compare_scnd_index(void *scnd_index1, void *scnd_index2)

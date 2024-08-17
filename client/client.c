@@ -1,10 +1,72 @@
-#include "server.h"
+#include "client.h"
+
+/**
+ * @brief Read from a tcp socket
+ *
+ * Since tcp sockets can have partial reads, this function will keep reading until the buffer is full
+ *
+ * @param fd file descriptor of the socket
+ * @param buffer buffer to read into
+ * @param size size of the data to read into the buffer, in bytes
+ *
+ * @return int 0 on success, -1 on failure to read or unexpected EOF
+ */
+int read_tcp_socket(int fd, char *buffer, int size)
+{
+
+    while (size > 0)
+    {
+        int n = read(fd, buffer, size);
+
+        if (n <= 0)
+        {
+            // error or unexpected EOF
+            return -1;
+        }
+
+        size -= n;
+        buffer += n;
+    }
+
+    return 0;
+}
+
+/**
+ * @brief Write to a tcp socket
+ *
+ * Since tcp sockets can have partial writes, this function will keep writing until the buffer is empty
+ *
+ * @param fd file descriptor of the socket
+ * @param buffer buffer to write from
+ * @param size size of the data to write into the socket, in bytes
+ *
+ * @return int 0 on success, -1 on failure to write or unexpected EOF
+ */
+int write_tcp_socket(int fd, char *buffer, int size)
+{
+
+    while (size > 0)
+    {
+        int n = write(fd, buffer, size);
+
+        if (n <= 0)
+        {
+            // error or unexpected EOF
+            return -1;
+        }
+
+        size -= n;
+        buffer += n;
+    }
+
+    return 0;
+}
 
 /**
  * @brief Processes the server response according to the liteDB protocol
- * 
+ *
  * @param confd the client socket file descriptor
- * 
+ *
  * @return int 0 on success, -1 on error
  */
 int process_server_response(int confd)
