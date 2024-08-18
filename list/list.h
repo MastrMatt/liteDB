@@ -2,16 +2,17 @@
 #include <stdlib.h>
 #include <string.h>
 
-typedef enum NodeType
+typedef enum ListType
 {
-    NODE_TYPE_FLOAT,
-    NODE_TYPE_STRING
-} NodeType;
+    LIST_TYPE_INT,
+    LIST_TYPE_FLOAT,
+    LIST_TYPE_STRING
+} ListType;
 
 typedef struct ListNode
 {
     void *data;
-    NodeType type;
+    ListType listType;
 
     struct ListNode *prev;
     struct ListNode *next;
@@ -26,11 +27,11 @@ typedef struct List
 
 List *list_init();
 
-int list_linsert(List *list, void *data, NodeType type);
-int list_rinsert(List *list, void *data, NodeType type);
+int list_linsert(List *list, void *data, ListType listType);
+int list_rinsert(List *list, void *data, ListType listType);
 int list_lremove(List *list);
 int list_rremove(List *list);
-int list_imodify(List *list, int index, void *data, NodeType type);
+int list_imodify(List *list, int index, void *data, ListType listType);
 int list_trim(List *list, int start, int end);
 ListNode *list_iget(List *list, int index);
 void list_free_contents(List *list);

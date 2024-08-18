@@ -7,8 +7,8 @@ int main()
     char *test_strings[] = {"hello", "world", "cookies", "are yummy"};
 
     // test list_linsert
-    list_linsert(list, test_strings[1], NODE_TYPE_STRING);
-    list_linsert(list, test_strings[0], NODE_TYPE_STRING);
+    list_linsert(list, test_strings[1], LIST_TYPE_STRING);
+    list_linsert(list, test_strings[0], LIST_TYPE_STRING);
 
     ListNode *test1 = list_iget(list, 0);
     ListNode *test2 = list_iget(list, 1);
@@ -19,8 +19,8 @@ int main()
     }
 
     // test list_rinsert
-    list_rinsert(list, test_strings[2], NODE_TYPE_STRING);
-    list_rinsert(list, test_strings[3], NODE_TYPE_STRING);
+    list_rinsert(list, test_strings[2], LIST_TYPE_STRING);
+    list_rinsert(list, test_strings[3], LIST_TYPE_STRING);
 
     ListNode *test3 = list_iget(list, 2);
     ListNode *test4 = list_iget(list, 3);
@@ -47,7 +47,7 @@ int main()
     }
 
     // test list_imodify
-    list_imodify(list, 0, test_strings[3], NODE_TYPE_STRING);
+    list_imodify(list, 0, test_strings[3], LIST_TYPE_STRING);
     ListNode *test7 = list_iget(list, 0);
     if (strcmp((char *)test7->data, test_strings[3]) != 0)
     {
@@ -55,10 +55,10 @@ int main()
     }
 
     // test list_trim
-    list_imodify(list, 0, test_strings[0], NODE_TYPE_STRING);
-    list_imodify(list, 1, test_strings[1], NODE_TYPE_STRING);
-    list_rinsert(list, test_strings[2], NODE_TYPE_STRING);
-    list_rinsert(list, test_strings[3], NODE_TYPE_STRING);
+    list_imodify(list, 0, test_strings[0], LIST_TYPE_STRING);
+    list_imodify(list, 1, test_strings[1], LIST_TYPE_STRING);
+    list_rinsert(list, test_strings[2], LIST_TYPE_STRING);
+    list_rinsert(list, test_strings[3], LIST_TYPE_STRING);
 
     // trim from 1 to 2
     list_trim(list, 1, 2);

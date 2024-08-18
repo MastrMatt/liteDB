@@ -194,10 +194,10 @@ bool test_avl_iterate_response()
 
 bool test_parse_cmd_string()
 {
-    char *cmd_string = "SET key";
+    char *cmd_string = "set key";
     Command *cmd = parse_cmd_string(cmd_string, strlen(cmd_string));
 
-    if (strcmp(cmd->name, "SET") != 0)
+    if (strcmp(cmd->name, "set") != 0)
     {
         fprintf(stderr, "command name should be 'SET'\n");
         return false;
@@ -233,7 +233,7 @@ bool test_string_commands()
 
     test_init();
 
-    char *cmdString = "SET key value";
+    char *cmdString = "set key value";
     // set this to true, don't want to write to aof file in a tests
     bool aof_restore = true;
 
@@ -255,7 +255,7 @@ bool test_string_commands()
     }
 
     // test del command
-    cmdString = "DEL key";
+    cmdString = "del key";
     cmd = parse_cmd_string(cmdString, strlen(cmdString));
     del_command(cmd, aof_restore);
 
@@ -282,19 +282,19 @@ bool test_meta_commands()
     bool aof_restore = true;
 
     // insert a string,hashtable, list, sorted set
-    char *cmdString = "SET key value";
+    char *cmdString = "set key value";
     Command *cmd = parse_cmd_string(cmdString, strlen(cmdString));
     set_command(cmd, aof_restore);
 
-    cmdString = "HSET hash key value";
+    cmdString = "hset hash key value";
     cmd = parse_cmd_string(cmdString, strlen(cmdString));
     hset_command(cmd, aof_restore);
 
-    cmdString = "LPUSH list value";
+    cmdString = "lpush list value";
     cmd = parse_cmd_string(cmdString, strlen(cmdString));
     lpush_command(cmd, aof_restore);
 
-    cmdString = "ZADD sortedset 1 value";
+    cmdString = "zadd sortedset 1 value";
     cmd = parse_cmd_string(cmdString, strlen(cmdString));
     zadd_command(cmd, aof_restore);
 
@@ -313,7 +313,7 @@ bool test_meta_commands()
     }
 
     // test del command
-    cmdString = "DEL key";
+    cmdString = "del key";
 
     cmd = parse_cmd_string(cmdString, strlen(cmdString));
     del_command(cmd, aof_restore);
@@ -327,7 +327,7 @@ bool test_meta_commands()
     }
 
     // test flushall command
-    cmdString = "FLUSHALL";
+    cmdString = "flushall";
     cmd = parse_cmd_string(cmdString, strlen(cmdString));
     flushall_cmd(cmd, aof_restore);
 
@@ -354,7 +354,7 @@ bool test_hashtable_commands()
     test_init();
 
     // test hset command
-    char *cmdString = "HSET hash key value";
+    char *cmdString = "hset hash key value";
     Command *cmd = parse_cmd_string(cmdString, strlen(cmdString));
     hset_command(cmd, aof_restore);
 
@@ -381,7 +381,7 @@ bool test_hashtable_commands()
     }
 
     // test get command
-    cmdString = "HGET hash key";
+    cmdString = "hget hash key";
     cmd = parse_cmd_string(cmdString, strlen(cmdString));
     char *response = hget_command(cmd);
 
@@ -404,7 +404,7 @@ bool test_hashtable_commands()
     }
 
     // test hdel command
-    cmdString = "HDEL hash key";
+    cmdString = "hdel hash key";
     cmd = parse_cmd_string(cmdString, strlen(cmdString));
     hdel_command(cmd, aof_restore);
 
@@ -419,14 +419,15 @@ bool test_hashtable_commands()
     return true;
 }
 
-bool test_list_commands() {
+bool test_list_commands()
+{
     // set this to true, don't want to write to aof file in a tests
     bool aof_restore = true;
 
     test_init();
 
     // test lpush command
-    char *cmdString = "LPUSH list value";
+    char *cmdString = "lpush list value";
     Command *cmd = parse_cmd_string(cmdString, strlen(cmdString));
     lpush_command(cmd, aof_restore);
 
@@ -438,41 +439,214 @@ bool test_list_commands() {
         return false;
     }
 
-    // check if list has the value
-    ListNode *list_node = lget(fetched_node->value, 0);
-    if (!list_node)
+    // check if list has size 1
+    if (((List *)fetched_node->value)->size != 1)
     {
-        fprintf(stderr, "value not found in list, was not set\n");
+        fprintf(stderr, "list size should be 1\n");
         return false;
     }
 
-    if (strcmp(list_node->value, "value") != 0)
+    // check if list has the value
+    ListNode *list_node = list_iget(fetched_node->value, 0);
+    if (strcmp(list_node->data, "value") != 0)
     {
-        fprintf(stderr, "incorrect value set\n");
+        printf("%s\n", (char *)list_node->data);
+        fprintf(stderr, "value not found in list, was not set\n");
         return false;
     }
 
     // test rpush command
-    cmdString = "RPUSH list value2";
+    cmdString = "rpush list value2";
     cmd = parse_cmd_string(cmdString, strlen(cmdString));
     rpush_command(cmd, aof_restore);
 
-    // check if list has the value
-    list_node = lget(fetched_node->value, 1);
-    if (!list_node)
+    list_node = list_iget(fetched_node->value, 1);
+    if (strcmp(list_node->data, "value2") != 0)
+    {
+        printf("String is %s\n", (char *)list_node->data);
+        fprintf(stderr, "value2 not found in list, was not set\n");
+        return false;
+    }
+
+    // test lpop command
+    cmdString = "lpop list";
+    cmd = parse_cmd_string(cmdString, strlen(cmdString));
+    lpop_command(cmd, aof_restore);
+
+    // check if list has size 1
+    if (((List *)fetched_node->value)->size != 1)
+    {
+        fprintf(stderr, "list size should be 1\n");
+        return false;
+    }
+
+    // test rpop command
+    cmdString = "rpop list";
+    cmd = parse_cmd_string(cmdString, strlen(cmdString));
+    rpop_command(cmd, aof_restore);
+
+    // check if list has size 0
+    if (((List *)fetched_node->value)->size != 0)
+    {
+        fprintf(stderr, "list size should be 0\n");
+        return false;
+    }
+
+    // test llen command
+    cmdString = "llen list";
+    cmd = parse_cmd_string(cmdString, strlen(cmdString));
+    char *response = llen_cmd(cmd);
+
+    if (response[0] != SER_INT)
+    {
+        fprintf(stderr, "response type should be integer\n");
+        return false;
+    }
+
+    if (*(int *)(response + 5) != 0)
+    {
+        printf("%d\n", *(int *)(response + 1));
+        fprintf(stderr, "response value should be 0\n");
+        return false;
+    }
+
+    // test lset
+    cmdString = "lpush list value";
+    cmd = parse_cmd_string(cmdString, strlen(cmdString));
+    lpush_command(cmd, aof_restore);
+
+    cmdString = "lset list 0 newvalue";
+    cmd = parse_cmd_string(cmdString, strlen(cmdString));
+    lset_cmd(cmd, aof_restore);
+
+    list_node = list_iget(fetched_node->value, 0);
+    if (strcmp(list_node->data, "newvalue") != 0)
     {
         fprintf(stderr, "value not found in list, was not set\n");
         return false;
     }
 
-    if (strcmp(list_node->value, "value2") != 0)
+    // remove all elements
+    cmdString = "lpop list";
+    cmd = parse_cmd_string(cmdString, strlen(cmdString));
+    lpop_command(cmd, aof_restore);
+
+    // test ltrim
+    cmdString = "lpush list value2";
+    cmd = parse_cmd_string(cmdString, strlen(cmdString));
+    lpush_command(cmd, aof_restore);
+
+    cmdString = "lpush list value";
+    cmd = parse_cmd_string(cmdString, strlen(cmdString));
+    lpush_command(cmd, aof_restore);
+
+    cmdString = "rpush list value3";
+    cmd = parse_cmd_string(cmdString, strlen(cmdString));
+    rpush_command(cmd, aof_restore);
+
+    cmdString = "rpush list value4";
+    cmd = parse_cmd_string(cmdString, strlen(cmdString));
+    rpush_command(cmd, aof_restore);
+
+    // trim from 1 to 2
+    cmdString = "ltrim list 1 2";
+    cmd = parse_cmd_string(cmdString, strlen(cmdString));
+    ltrim_cmd(cmd, aof_restore);
+
+    // check if list has size 1
+    if (((List *)fetched_node->value)->size != 2)
     {
-        fprintf(stderr, "incorrect value set\n");
+        fprintf(stderr, "list size should be 2 after ltrim\n");
         return false;
     }
 
+    // check first element
+    list_node = list_iget(fetched_node->value, 0);
+    if (strcmp(list_node->data, "value2") != 0)
+    {
+        fprintf(stderr, "ltrim, value2 not found in list, was not set\n");
+        return false;
+    }
+
+    // check second element
+    list_node = list_iget(fetched_node->value, 1);
+    if (strcmp(list_node->data, "value3") != 0)
+    {
+
+        printf("%s\n", (char *)list_node->data);
+        fprintf(stderr, "ltrim, value3 not found in list, was not set\n");
+        return false;
+    }
+
+    // reset global table
+    test_reset();
+
     return true;
-} 
+}
+
+bool test_zset_commands()
+{
+    // set this to true, don't want to write to aof file in a tests
+    bool aof_restore = true;
+
+    test_init();
+
+    // test zadd command
+    char *cmdString = "zadd sortedset 1 value";
+    Command *cmd = parse_cmd_string(cmdString, strlen(cmdString));
+    zadd_command(cmd, aof_restore);
+
+    // check if global table has the sorted set
+    HashNode *fetched_node = hget(global_table, "sortedset");
+    if (!fetched_node)
+    {
+        fprintf(stderr, "zset, sorted set not found in global table, was not set\n");
+        return false;
+    }
+
+    // check if sorted set has the value
+    HashNode *hash_node = zset_search_by_key(fetched_node->value, "value");
+    if (!hash_node)
+    {
+        fprintf(stderr, "zset, value not found in sorted set, was not set\n");
+        return false;
+    }
+
+    // test zscore
+    cmdString = "zscore sortedset value";
+    cmd = parse_cmd_string(cmdString, strlen(cmdString));
+    char *response = zscore_cmd(cmd);
+
+    if (response[0] != SER_FLOAT)
+    {
+        fprintf(stderr, "zset, response type should be float\n");
+        return false;
+    }
+
+    if (*(float *)(response + 5) != 1)
+    {
+        fprintf(stderr, "zset, response value should be 1\n");
+        return false;
+    }
+
+    // test zrem
+    cmdString = "zrem sortedset value";
+    cmd = parse_cmd_string(cmdString, strlen(cmdString));
+    zrem_command(cmd, aof_restore);
+
+    // check if key was deleted
+    hash_node = zset_search_by_key(fetched_node->value, "value");
+    if (hash_node)
+    {
+        fprintf(stderr, "value was not deleted\n");
+        return false;
+    }
+
+    // reset global table
+    test_reset();
+
+    return true;
+}
 
 int main()
 {
@@ -484,12 +658,8 @@ int main()
     assert(test_parse_cmd_string());
     assert(test_string_commands());
     assert(test_hashtable_commands());
-
-
-
-
-
-
+    assert(test_list_commands());
+    assert(test_zset_commands());
     assert(test_meta_commands());
 
     printf("All tests passed\n");

@@ -24,11 +24,11 @@ List *list_init()
  *
  * @param list The list to insert into
  * @param data The data to insert
- * @param type The type of the data
+ * @param listType The type of the data
  *
  * @return int 0 if successful, -1 if failed
  */
-int list_linsert(List *list, void *data, NodeType type)
+int list_linsert(List *list, void *data, ListType listType)
 {
     ListNode *new_node = (ListNode *)calloc(1, sizeof(ListNode));
     if (new_node == NULL)
@@ -38,12 +38,12 @@ int list_linsert(List *list, void *data, NodeType type)
     }
 
     // edit Node
-    if (type == NODE_TYPE_STRING)
+    if (listType == LIST_TYPE_STRING)
     {
         new_node->data = strdup((char *)data);
-        new_node->type = NODE_TYPE_STRING;
+        new_node->listType = LIST_TYPE_STRING;
     }
-    else if (type == NODE_TYPE_FLOAT)
+    else if (listType == LIST_TYPE_FLOAT)
     {
         new_node->data = calloc(1, sizeof(float));
         if (new_node->data == NULL)
@@ -53,7 +53,7 @@ int list_linsert(List *list, void *data, NodeType type)
         }
 
         *(float *)new_node->data = *(float *)data;
-        new_node->type = NODE_TYPE_FLOAT;
+        new_node->listType = LIST_TYPE_FLOAT;
     }
     else
     {
@@ -86,11 +86,11 @@ int list_linsert(List *list, void *data, NodeType type)
  *
  * @param list The list to insert into
  * @param data The data to insert
- * @param type The type of the data
+ * @param listType The type of the data
  *
  * @return int 0 if successful, -1 if failed
  */
-int list_rinsert(List *list, void *data, NodeType type)
+int list_rinsert(List *list, void *data, ListType listType)
 {
     ListNode *new_node = (ListNode *)calloc(1, sizeof(ListNode));
     if (new_node == NULL)
@@ -100,12 +100,12 @@ int list_rinsert(List *list, void *data, NodeType type)
     }
 
     // edit Node
-    if (type == NODE_TYPE_STRING)
+    if (listType == LIST_TYPE_STRING)
     {
         new_node->data = strdup((char *)data);
-        new_node->type = NODE_TYPE_STRING;
+        new_node->listType = LIST_TYPE_STRING;
     }
-    else if (type == NODE_TYPE_FLOAT)
+    else if (listType == LIST_TYPE_FLOAT)
     {
         new_node->data = calloc(1, sizeof(float));
         if (new_node->data == NULL)
@@ -115,7 +115,7 @@ int list_rinsert(List *list, void *data, NodeType type)
         }
 
         *(float *)new_node->data = *(float *)data;
-        new_node->type = NODE_TYPE_FLOAT;
+        new_node->listType = LIST_TYPE_FLOAT;
     }
     else
     {
@@ -233,12 +233,12 @@ int list_rremove(List *list)
  *
  * @param list The list to modify
  * @param index The index of the node to modify
- * @param data The new data
+ * @param listType The type of the data
  * @param type The type of the data
  *
  * @return int 0 if successful, -1 if failed
  */
-int list_imodify(List *list, int index, void *data, NodeType type)
+int list_imodify(List *list, int index, void *data, ListType listType)
 {
     if (index < 0 || index >= list->size)
     {
@@ -252,12 +252,12 @@ int list_imodify(List *list, int index, void *data, NodeType type)
         traverse = traverse->next;
     }
 
-    if (type == NODE_TYPE_STRING)
+    if (listType == LIST_TYPE_STRING)
     {
         free(traverse->data);
         traverse->data = strdup((char *)data);
     }
-    else if (type == NODE_TYPE_FLOAT)
+    else if (listType == LIST_TYPE_STRING)
     {
         free(traverse->data);
         traverse->data = calloc(1, sizeof(float));
@@ -360,11 +360,11 @@ void list_print(List *list)
     ListNode *traverse = list->head;
     while (traverse)
     {
-        if (traverse->type == NODE_TYPE_STRING)
+        if (traverse->listType == LIST_TYPE_STRING)
         {
             printf("%s\n", (char *)traverse->data);
         }
-        else if (traverse->type == NODE_TYPE_FLOAT)
+        else if (traverse->listType == LIST_TYPE_FLOAT)
         {
             printf("%f\n", *(float *)traverse->data);
         }

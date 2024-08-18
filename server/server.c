@@ -926,7 +926,7 @@ char *lpush_command(Command *cmd, bool aof_restore)
     List *list = (List *)fetched_node->value;
 
     // add the value to the list
-    int ret = list_linsert(list, value, STRING);
+    int ret = list_linsert(list, value, LIST_TYPE_STRING);
     if (ret)
     {
         return error_response("Failed to add value to list");
@@ -995,7 +995,7 @@ char *rpush_command(Command *cmd, bool aof_restore)
     List *list = (List *)fetched_node->value;
 
     // add the value to the list
-    int ret = list_rinsert(list, value, STRING);
+    int ret = list_rinsert(list, value, LIST_TYPE_STRING);
     if (ret)
     {
         return error_response("Failed to add value to list");
@@ -1458,7 +1458,7 @@ char *lset_cmd(Command *cmd, bool aof_restore)
     }
 
     // set the value in the list
-    int ret = list_imodify(list, index, value, STRING);
+    int ret = list_imodify(list, index, value, LIST_TYPE_STRING);
     if (ret)
     {
         return error_response("Failed to set value in list");
