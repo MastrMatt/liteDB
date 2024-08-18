@@ -382,6 +382,8 @@ void global_table_del(char *key, char *value, ValueType type)
 char *del_command(Command *cmd, bool aof_restore)
 {
 
+    int elem_removed = 0;
+
     if (cmd->num_args != 1)
     {
         return error_response("del command requires 1 argument (key)");
@@ -395,11 +397,12 @@ char *del_command(Command *cmd, bool aof_restore)
 
     // execute delete
     global_table_del(fetched_node->key, fetched_node->value, fetched_node->valueType);
+    elem_removed++;
 
     if (!aof_restore)
     {
         handle_aof_write(cmd);
-        return null_response();
+        return get_response(INTEGER, &elem_removed);
     }
     else
     {

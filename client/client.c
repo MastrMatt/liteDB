@@ -281,7 +281,7 @@ int handle_request(int confd, char *message)
     return 0;
 }
 
-int main()
+int main(int argc, char *argv[])
 {
     int client_socket;
     struct sockaddr_in server_address;
@@ -329,6 +329,12 @@ int main()
         if (err < 0)
         {
             break;
+        }
+
+        // only flush stdout if in debug mode
+        if (argc > 1 && strcmp(argv[1], "-d") == 0)
+        {
+            fflush(stdout);
         }
     }
 
