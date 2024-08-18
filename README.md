@@ -78,8 +78,8 @@ liteDB supports a variety of commands across different data structures:
 
 ### Lists
 
-- LPUSH, RPUSH: (key)
-- LPOP, RPOP: (key)
+- LPUSH, RPUSH: (key, value)
+- LPOP, RPOP: (key, value)
 - LLEN: (key)
 - LRANGE: (key, start, stop)
 - LTRIM: (key, start, stop)

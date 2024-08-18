@@ -372,7 +372,7 @@ void global_table_del(char *key, char *value, ValueType type)
 }
 
 /**
- * @brief Deletes a key-value pair from the global table and handles AOF logging if necessary.
+ * @brief Deletes a key-value pair from the global table ,where value is a string and handles AOF logging if necessary.
  *
  * @param cmd Command structure containing the (key)
  * @param aof_restore Flag indicating whether to log the deletion to the AOF file.
@@ -880,7 +880,7 @@ char *hgetall_command(Command *cmd)
  *
  * The LPUSH command adds a value to the head of a list. If the key does not exist, a new list is created. Returns an integer response indicating the number of elements added.
  *
- * @param cmd Command structure specifying (key)
+ * @param cmd Command structure specifying (key, value)
  * @param aof_restore Flag indicating whether to log the LPUSH operation to the AOF file.
  *
  * @return char* response if AOF restore is disabled, or NULL otherwise.
@@ -949,7 +949,7 @@ char *lpush_command(Command *cmd, bool aof_restore)
  *
  * The RPUSH command adds a value to the tail of a list. If the key does not exist, a new list is created. Returns an integer response indicating the number of elements added.
  *
- * @param cmd Command structure specifying the (key)
+ * @param cmd Command structure specifying the (key,value)
  * @param aof_restore Flag indicating whether to log the RPUSH operation to the AOF file.
  *
  * @return char* response if AOF restore is disabled, or NULL otherwise.
