@@ -99,19 +99,40 @@ liteDB supports a variety of commands across different data structures:
 
 To begin using liteDB, follow these simple steps:
 
-1. Clone the repository.
+1. Ensure you have a unix environment with gcc installed
+
+2. Clone the repository.
+
+First, you need to obtain the source code of liteDB. You can do this by cloning the GitHub repository. Open your terminal or command prompt and execute the following commands:
 
 ```
    git clone https://github.com/MastrMatt/LiteDB.git
    cd LiteDB
 ```
 
-2. Run `make all` to compile the source code.
-3. Start the server with `./server`.
-4. Connect to the server using the client executable `./client`.
+3. Compile and run the server in a terminal window
+
+Before running the server, ensure you have all the necessary tools installed, such as gcc for compiling C programs. Then, compile and run the server by executing the following commands in a new terminal window:
+
+```
+   cd server
+   make all
+   ./runserver
+```
+
+4. Compile and run the client in another terminal window
+
+Similarly, to interact with the liteDB server, you need to compile and run the client. Make sure you're in the root directory of the liteDB project (liteDB). Then, in another terminal window, execute:
+
+```
+   cd client
+   make all
+   ./runclient
+```
 
 ## Planned Features
 
+- Integrate Docker into the build and deploy step
 - Client connection timers for idle detection and disconnection.
 - Time-to-live (TTL) for data in the global hashtable for caching purposes.
 - Automatic rewriting of the AOF file when it exceeds a certain size threshold.
