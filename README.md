@@ -93,7 +93,7 @@ liteDB supports a variety of commands across different data structures:
 
 -   ZSCORE: (key, name) - Returns the score of the element with the specified name from the sorted set specified by key.
 
--   ZQUERY: (key score name offset limit)
+-   ZQUERY: (key score name offset limit) -
     General query command meant to combine various typical Redis sorted cmds into one.
     ZrangeByScore: ZQUERY with (key score "" offset limit),
     Zrange by rank: ZQUERY with (key -inf "" offset limit)
