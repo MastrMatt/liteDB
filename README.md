@@ -60,18 +60,18 @@ liteDB supports a variety of commands across different data structures:
 
 ### Meta Commands
 
--   DEL: (key)
--   KEYS
--   FLUSHALL
+-   DEL: (key) - Deletes the value specified by key. Returns the amount of keys deleted
+-   KEYS - Returns all the key:value pairs in the database
+-   FLUSHALL - Removes all the key:value pairs in the database. Returns nil
 
 ### Strings
 
--   GET: (key) Get the value of a key, it the key does not exist return an error. Returns the value
--   SET: (key, value) Sets a new key:value pair in the hashtable, it the key already exists returns an error. Returns nil
+-   GET: (key) - Get the value of a key, it the key does not exist return an error. Returns the value
+-   SET: (key, value) - Sets a new key:value pair in the hashtable, it the key already exists returns an error. Returns nil
 
 ### Hashtable
 
--   HSET: (key, field, value) - Sets a field:value pair in the hash specified by key. If the key does not exist, it will create it. Returns nil
+-   HSET: (key, field, value) - Sets a field:value pair in the hash specified by key. If the key does not exist, it will create it. It the field already exists, it overrides the previous value. Returns nil
 -   HGET: (key, field) - Gets the value of field from the hash specified by key. Returns the value
 -   HDEL: (key, field) - Deletes a field from the hash specified by key. Returns an integer for how many elements were removed
 -   HGETALL: (key) - Returns all fields and values of the hash specified by key.
@@ -81,17 +81,20 @@ liteDB supports a variety of commands across different data structures:
 -   LPUSH, RPUSH: (key, value) - Adds value to the list specified by key. If key does not exist, a new list is created. Returns an integer for how many elements were added
 -   LPOP, RPOP: (key, value) - Removes and returns the corresponding element of the list specified by key. Returns an integer for how many elements were removed
 -   LLEN: (key) - Returns the length of the list specified by key
--   LRANGE: (key, start, stop)
--   LTRIM: (key, start, stop)
--   LSET: (key, index, value)
+-   LRANGE: (key, start, stop) - Returns values from index start up to and including index stop from the list. The list is specified by key.
+-   LTRIM: (key, start, stop) - Trims a list from index start up to and including index stop. The list is specified by key. Returns nil
+-   LSET: (key, index, value) - Sets the index of the list to contain value. The list is specified by the key. Returns nil
 
 ### Sorted Sets
 
--   ZADD: (key, score, name)
--   ZREM: (key, name)
--   ZSCORE: (key, name)
+-   ZADD: (key, score, name) - Adds (score, name) to the set specified by key. If the key does not exist, it is created. If (score, name) already exists , it is updated. Returns the number of elements inserted or updated.
+
+-   ZREM: (key, name) - Removes the element from the sorted set with the specified name. The sorted set is specified by key. Returns the number of elements removed.
+
+-   ZSCORE: (key, name) - Returns the score of the element with the specified name from the sorted set specified by key.
+
 -   ZQUERY: (key score name offset limit)
-    This command is not present in Redis, it is a general query command meant to combine various Redis Zset cmds into one.
+    General query command meant to combine various typical Redis sorted cmds into one.
     ZrangeByScore: ZQUERY with (key score "" offset limit),
     Zrange by rank: ZQUERY with (key -inf "" offset limit)
 
