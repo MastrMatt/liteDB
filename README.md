@@ -4,16 +4,16 @@ liteDB is a lightweight, in-memory database inspired by Redis. It combines cachi
 
 ## Key Features
 
-- **In-Memory Storage**: Offers rapid access to data with the option for persistence through AOF.
-- **Custom Data Structures**: Implements its own versions of hash tables and AVL trees for flexibility
-- **Single-threaded Event Loop**: Similar to Redis, LiteDB operates a single-threaded event loop with IO multiplexing for handling requests, minimizing thread creation overhead and improving performance
-- **Multithreading for Persistence**: Utilizes multithreading to flush the AOF buffer to disk, guaranteeing data durability without impacting main thread performance.
-- **Command Pipelining**: Supports pipelined commands from clients for batch processing and efficiency.
-- **TCP Server Architecture**: Operates as a TCP server
+-   **In-Memory Storage**: Offers rapid access to data with the option for persistence through AOF.
+-   **Custom Data Structures**: Implements its own versions of hash tables and AVL trees for flexibility
+-   **Single-threaded Event Loop**: Similar to Redis, LiteDB operates a single-threaded event loop with IO multiplexing for handling requests, minimizing thread creation overhead and improving performance
+-   **Multithreading for Persistence**: Utilizes multithreading to flush the AOF buffer to disk, guaranteeing data durability without impacting main thread performance.
+-   **Command Pipelining**: Supports pipelined commands from clients for batch processing and efficiency.
+-   **TCP Server Architecture**: Operates as a TCP server
 
 ## Database Structure
 
-- All data in liteDB are stored as strings, except for the ZSET values which are stored as floats
+-   All data in liteDB are stored as strings, except for the ZSET values which are stored as floats
 
 ## Communication Protocol
 
@@ -60,40 +60,40 @@ liteDB supports a variety of commands across different data structures:
 
 ### Meta Commands
 
-- DEL: (key)
-- KEYS
-- FLUSHALL
+-   DEL: (key)
+-   KEYS
+-   FLUSHALL
 
 ### Strings
 
-- GET: (key)
-- SET: (key, value)
+-   GET: (key) Get the value of a key, it the key does not exist return an error. Returns the value
+-   SET: (key, value) Sets a new key:value pair in the hashtable, it the key already exists returns an error. Returns nil
 
 ### Hashtable
 
-- HSET: (key, field, value)
-- HGET: (key, field)
-- HDEL: (key, field)
-- HGETALL: (key)
+-   HSET: (key, field, value) - Sets a field:value pair in the hash specified by key. If the key does not exist, it will create it. Returns nil
+-   HGET: (key, field) - Gets the value of field from the hash specified by key. Returns the value
+-   HDEL: (key, field) - Deletes a field from the hash specified by key. Returns an integer for how many elements were removed
+-   HGETALL: (key) - Returns all fields and values of the hash specified by key.
 
 ### Lists
 
-- LPUSH, RPUSH: (key, value)
-- LPOP, RPOP: (key, value)
-- LLEN: (key)
-- LRANGE: (key, start, stop)
-- LTRIM: (key, start, stop)
-- LSET: (key, index, value)
+-   LPUSH, RPUSH: (key, value) - Adds value to the list specified by key. If key does not exist, a new list is created. Returns an integer for how many elements were added
+-   LPOP, RPOP: (key, value) - Removes and returns the corresponding element of the list specified by key. Returns an integer for how many elements were removed
+-   LLEN: (key) - Returns the length of the list specified by key
+-   LRANGE: (key, start, stop)
+-   LTRIM: (key, start, stop)
+-   LSET: (key, index, value)
 
 ### Sorted Sets
 
-- ZADD: (key, score, name)
-- ZREM: (key, name)
-- ZSCORE: (key, name)
-- ZQUERY: (key score name offset limit)
-  This command is not present in Redis, it is a general query command meant to combine various Redis Zset cmds into one.
-  ZrangeByScore: ZQUERY with (key score "" offset limit),
-  Zrange by rank: ZQUERY with (key -inf "" offset limit)
+-   ZADD: (key, score, name)
+-   ZREM: (key, name)
+-   ZSCORE: (key, name)
+-   ZQUERY: (key score name offset limit)
+    This command is not present in Redis, it is a general query command meant to combine various Redis Zset cmds into one.
+    ZrangeByScore: ZQUERY with (key score "" offset limit),
+    Zrange by rank: ZQUERY with (key -inf "" offset limit)
 
 ## Getting Started
 
@@ -132,10 +132,10 @@ Similarly, to interact with the liteDB server, you need to compile and run the c
 
 ## Planned Features
 
-- Integrate Docker into the build and deploy step
-- Client connection timers for idle detection and disconnection.
-- Time-to-live (TTL) for data in the global hashtable for caching purposes.
-- Automatic rewriting of the AOF file when it exceeds a certain size threshold.
+-   Integrate Docker into the build and deploy step
+-   Client connection timers for idle detection and disconnection.
+-   Time-to-live (TTL) for data in the global hashtable for caching purposes.
+-   Automatic rewriting of the AOF file when it exceeds a certain size threshold.
 
 ## Author
 
@@ -147,9 +147,9 @@ This project is licensed under the [MIT License](LICENSE).
 
 ## Main Sources
 
-- [Redis](https://redis.io/)
-- [Build Your Own Redis](https://build-your-own.org/redis/#table-of-contents)
-- [Redis Persistence Demystified](http://oldblog.antirez.com/post/redis-persistence-demystified.html)
+-   [Redis](https://redis.io/)
+-   [Build Your Own Redis](https://build-your-own.org/redis/#table-of-contents)
+-   [Redis Persistence Demystified](http://oldblog.antirez.com/post/redis-persistence-demystified.html)
 
 ## Contributing
 
