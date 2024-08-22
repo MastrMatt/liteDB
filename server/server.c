@@ -1,5 +1,7 @@
-
 #include "server.h"
+
+// protocol header
+#include "../protocol.h"
 
 // global variables
 HashTable *global_table;
@@ -314,22 +316,19 @@ void handle_aof_write(Command *cmd)
     }
 
     // create a string from the command
-    char message[MAX_MESSAGE_SIZE] = {'\0'};
+    char message[MAX_MESSAGE_SIZE + 1] = {'\0'};
 
     // write the command name
-    snprintf(message, MAX_MESSAGE_SIZE, "%s ", cmd->name);
+    snprintf(message, MAX_MESSAGE_SIZE, "%s", cmd->name);
 
     // write the command arguments
-    for (int i = 0; i < cmd->num_args - 1; i++)
+    for (int i = 0; i < cmd->num_args; i++)
     {
-        snprintf(message + strlen(message), MAX_MESSAGE_SIZE - strlen(message) - 1, "%s ", cmd->args[i]);
+        snprintf(message + strlen(message), MAX_MESSAGE_SIZE - strlen(message) - 1, " %s", cmd->args[i]);
     }
 
-    // write the final argument
-    if (cmd->num_args > 0)
-    {
-        snprintf(message + strlen(message), MAX_MESSAGE_SIZE - strlen(message) - 1, "%s\n", cmd->args[cmd->num_args - 1]);
-    }
+    // write the final newline character`
+    snprintf(message + strlen(message), MAX_MESSAGE_SIZE - strlen(message) - 1, "\n");
 
     // write the command to the AOF
     aof_write(global_aof, message);
@@ -1940,7 +1939,15 @@ char *execute_command(Command *cmd, bool aof_restore)
 
     char *return_response;
 
-    if (strcmp(cmd->name, "get") == 0)
+    if (!cmd->name)
+    {
+        return_response = error_response("Command name was not specified");
+    }
+    else if (strcmp(cmd->name, "ping") == 0)
+    {
+        return_response = get_response(STRING, "pong");
+    }
+    else if (strcmp(cmd->name, "get") == 0)
     {
 
         return_response = get_command(cmd);

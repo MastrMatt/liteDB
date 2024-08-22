@@ -1,7 +1,10 @@
+#ifndef PROTOCOL_H
+#define PROTOCOL_H
+
 #define MAX_MESSAGE_SIZE 4096
 #define MAX_CLIENTS 2047
 #define MAX_ARGS 10
-#define SERVERPORT 9000
+#define SERVERPORT 9255
 
 typedef enum
 {
@@ -13,3 +16,5 @@ typedef enum
     SER_ARR,
 
 } SerialType;
+
+#endif

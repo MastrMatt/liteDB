@@ -1,4 +1,6 @@
 #include "aof.h"
+// protocol header
+#include "../protocol.h"
 
 // initialize the AOF struct
 AOF *aof_init(char *aof_file_name, int flush_interval_sec, char *mode)

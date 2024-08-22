@@ -16,13 +16,13 @@
 #include <pthread.h>
 #include <signal.h>
 
-// protocol header
-#include "../protocol.h"
-
 // Zset includes AVLTree and HashTable header
 #include "../ZSet/ZSet.h"
 #include "../list/list.h"
 #include "../aof/aof.h"
+
+// protcol header
+#include "../protocol.h"
 
 // persistent storage
 #define AOF_FILE "AOF.aof"

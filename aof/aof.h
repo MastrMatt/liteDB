@@ -4,8 +4,6 @@
 #include <string.h>
 #include <pthread.h>
 
-#define MAX_MESSAGE_SIZE 4096
-
 typedef struct AOF
 {
     FILE *file;

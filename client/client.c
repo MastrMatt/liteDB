@@ -1,5 +1,8 @@
 #include "client.h"
 
+// protocol header
+#include "../protocol.h"
+
 /**
  * @brief Read from a tcp socket
  *
