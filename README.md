@@ -2,6 +2,65 @@
 
 liteDB is a lightweight, in-memory database inspired by Redis. It combines caching with the capabilities of a full-fledged database, featuring Append Only File (AOF) persistence for data durability.It is built from the ground up, including the TCP server and custom implementations of data structures such as hash tables and AVL trees.
 
+## Getting Started
+
+To begin using liteDB, follow these simple steps:
+
+1. Ensure you have a unix environment with gcc installed
+
+2. Clone the repository.
+
+First, you need to obtain the source code of liteDB. You can do this by cloning the GitHub repository. Open your terminal or command prompt and execute the following commands:
+
+```
+   git clone https://github.com/MastrMatt/LiteDB.git
+   cd LiteDB
+```
+
+3. Compile and run the server in a terminal window
+
+Before running the server, ensure you have all the necessary tools installed, such as gcc for compiling C programs. Then, compile and run the server by executing the following commands in a new terminal window:
+
+```
+   cd server
+   make all
+   ./runserver
+```
+
+4. Compile and run the client in another terminal window
+
+Similarly, to interact with the liteDB server, you need to compile and run the client. Make sure you're in the root directory of the liteDB project (liteDB). Then, in another terminal window, execute:
+
+```
+   cd client
+   make all
+   ./runclient
+```
+
+## Usage
+
+Basic example of the client
+
+```bash
+./runclient
+Connecting to server at: (127.0.0.1:9255)
+liteDB> set g 4
+(nil)
+liteDB> get g
+(str) 4
+liteDB> hset hash field value
+(int) 1
+liteDB> keys
+(arr) len = 2
+(str) g
+(str) hash
+(arr) end
+liteDB> del g
+(int) 1
+liteDB> waiting for command ...
+
+```
+
 ## Key Features
 
 -   **In-Memory Storage**: Offers rapid access to data with the option for persistence through AOF.
@@ -97,41 +156,6 @@ liteDB supports a variety of commands across different data structures:
     General query command meant to combine various typical Redis sorted cmds into one.
     ZrangeByScore: ZQUERY with (key score "" offset limit),
     Zrange by rank: ZQUERY with (key -inf "" offset limit)
-
-## Getting Started
-
-To begin using liteDB, follow these simple steps:
-
-1. Ensure you have a unix environment with gcc installed
-
-2. Clone the repository.
-
-First, you need to obtain the source code of liteDB. You can do this by cloning the GitHub repository. Open your terminal or command prompt and execute the following commands:
-
-```
-   git clone https://github.com/MastrMatt/LiteDB.git
-   cd LiteDB
-```
-
-3. Compile and run the server in a terminal window
-
-Before running the server, ensure you have all the necessary tools installed, such as gcc for compiling C programs. Then, compile and run the server by executing the following commands in a new terminal window:
-
-```
-   cd server
-   make all
-   ./runserver
-```
-
-4. Compile and run the client in another terminal window
-
-Similarly, to interact with the liteDB server, you need to compile and run the client. Make sure you're in the root directory of the liteDB project (liteDB). Then, in another terminal window, execute:
-
-```
-   cd client
-   make all
-   ./runclient
-```
 
 ## Planned Features
 
