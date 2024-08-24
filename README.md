@@ -22,6 +22,8 @@ docker run --network=host -it mastrmatt/litedb-cli:latest
 
 ```
 
+(Make sure to shutdown the docker containers after you are done using them.)
+
 Else, To begin using liteDB, follow these simple steps:
 
 1. Ensure you have a unix environment with gcc installed
