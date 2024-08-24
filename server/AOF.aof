@@ -1,6 +1,0 @@
-set g 4
-hset hash field value
-del g
-set key1 value1
-del key1
-flushall
