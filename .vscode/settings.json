@@ -1,8 +1,0 @@
-{
-  "files.associations": {
-    "*.css": "tailwindcss",
-    "system_error": "c",
-    "compare": "c",
-    "type_traits": "c"
-  }
-}
