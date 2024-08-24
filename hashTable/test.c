@@ -146,8 +146,6 @@ int main()
 
     hinsert(table, node2);
 
-    // hprint(table);
-
     // test resize
     int oldSize = table->size;
     table = hresize(table);
@@ -157,8 +155,6 @@ int main()
         fprintf(stderr, "Test 4 (Resizing hashtable) failed\n");
         return 1;
     }
-
-    hprint(table);
 
     printf("All tests passed\n");
 

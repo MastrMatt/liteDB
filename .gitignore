@@ -1,5 +1,7 @@
 # vscode environment
+.vscode
 .vscode/
+act
 
 # testing
 test/
