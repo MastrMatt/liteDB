@@ -8,7 +8,10 @@ aof_LIB = ../aof/aof.o
 PROTOCOL_HEADER = ../protocol.h
 
 
-all: runserver testserver
+all: runserver testserver test 
+
+test:
+	./testserver
 
 runserver: runserver.c server.o $(ZSet_LIB) $(HASH_TABLE_LIB) $(AVL_TREE_LIB)  $(list_LIB) $(aof_LIB)
 	$(CC) $(CC_FLAGS) -o runserver runserver.c server.o $(ZSet_LIB) $(HASH_TABLE_LIB) $(AVL_TREE_LIB)  $(list_LIB) $(aof_LIB) -lpthread 
@@ -18,3 +21,5 @@ server.o: server.c server.h $(PROTOCOL_HEADER)
 
 testserver: testserver.c server.o $(ZSet_LIB) $(HASH_TABLE_LIB) $(AVL_TREE_LIB)  $(list_LIB) $(aof_LIB)
 	$(CC) $(CC_FLAGS) -o testserver testserver.c server.o $(ZSet_LIB) $(HASH_TABLE_LIB) $(AVL_TREE_LIB)  $(list_LIB) $(aof_LIB) -lpthread
+
+

@@ -20,12 +20,6 @@ COPY . .
 # Compile the project
 RUN make all
 
-# Define port environtment variable
-ENV port=9255
-
-# Expose the docker port
-EXPOSE 9255
-
 # Run the client
 CMD ["./runclient"]
 

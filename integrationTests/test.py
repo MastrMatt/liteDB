@@ -13,6 +13,10 @@ class TestClientIntegration(unittest.TestCase):
         if os.path.exists("./AOF.aof"):
             os.remove("./AOF.aof")
 
+        # run the build for make all in ./client and ./server
+        subprocess.run(["make", "all"], cwd="../client")
+        subprocess.run(["make", "all"], cwd="../server")
+
         # Start the server
         cls.server_process = subprocess.Popen(
             ["../server/runserver", "-d"],
