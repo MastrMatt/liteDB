@@ -179,8 +179,6 @@ liteDB supports a variety of commands across different data structures:
 
 ## Planned Features
 
--   Integrate Docker into the build and deploy step
--   Set up workflows
 -   Client connection timers for idle detection and disconnection.
 -   Time-to-live (TTL) for data in the global hashtable for caching purposes.
 -   Automatic rewriting of the AOF file when it exceeds a certain size threshold.
