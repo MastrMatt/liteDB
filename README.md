@@ -1,7 +1,6 @@
 # liteDB: A Lightweight In-Memory Database Inspired by Redis
 
-liteDB is a lightweight, in-memory database inspired by Redis. It combines caching with the capabilities of a full-fledged database, featuring Append Only File (AOF) persistence for data durability.It is built from the ground up, including the TCP server and custom implementations of data structures such as hash tables and AVL trees.
-
+liteDB is a lightweight, in-memory database inspired by Redis. It combines caching with the capabilities of a full-fledged database, featuring Append Only File (AOF) persistence for data durability.
 ## Getting Started
 
 To begin using liteDB, follow these simple steps:
