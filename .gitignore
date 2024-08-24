@@ -1,12 +1,17 @@
 # vscode environment
-.vscode
+/.vscode
 .vscode/
 act
+
+runserver
+testserver
+runclient
+testclient
+
 
 # testing
 test/
 test
-
 
 # persistence
 *.aof

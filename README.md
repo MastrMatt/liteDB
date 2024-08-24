@@ -1,9 +1,28 @@
 # liteDB: A Lightweight In-Memory Database Inspired by Redis
 
 liteDB is a lightweight, in-memory database inspired by Redis. It combines caching with the capabilities of a full-fledged database, featuring Append Only File (AOF) persistence for data durability.
+
 ## Getting Started
 
-To begin using liteDB, follow these simple steps:
+If you have docker installed on your machine, it is easy to use liteDB:
+
+To spin up a server:
+
+```bash
+
+docker run -p 9255:9255 -it mastrmatt/litedb:latest
+
+```
+
+and a cli client:
+
+```bash
+
+docker run --network=host -it mastrmatt/litedb-cli:latest
+
+```
+
+Else, To begin using liteDB, follow these simple steps:
 
 1. Ensure you have a unix environment with gcc installed
 
