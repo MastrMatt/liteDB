@@ -18,11 +18,9 @@ and a cli client:
 
 ```bash
 
-docker run --network=host -it mastrmatt/litedb-cli:latest
+docker run --init --network=host -it mastrmatt/litedb-cli:latest
 
 ```
-
-(Make sure to shutdown the docker containers after you are done using them.)
 
 Else, To begin using liteDB, follow these simple steps:
 
