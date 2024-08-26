@@ -194,10 +194,10 @@ bool test_avl_iterate_response()
 
 bool test_parse_cmd_string()
 {
-    char *cmd_string = "set key";
+    char *cmd_string = "SET key";
     Command *cmd = parse_cmd_string(cmd_string, strlen(cmd_string));
 
-    if (strcmp(cmd->name, "set") != 0)
+    if (strcmp(cmd->name, "SET") != 0)
     {
         fprintf(stderr, "command name should be 'SET'\n");
         return false;
@@ -233,7 +233,7 @@ bool test_string_commands()
 
     test_init();
 
-    char *cmdString = "set key value";
+    char *cmdString = "SET key value";
     // set this to true, don't want to write to aof file in a tests
     bool aof_restore = true;
 
@@ -255,7 +255,7 @@ bool test_string_commands()
     }
 
     // test del command
-    cmdString = "del key";
+    cmdString = "DEL key";
     cmd = parse_cmd_string(cmdString, strlen(cmdString));
     del_command(cmd, aof_restore);
 
@@ -276,7 +276,7 @@ bool test_string_commands()
 bool test_exists_command()
 {
     // test exists on key that does not exist
-    char *cmdStringExists = "exists key";
+    char *cmdStringExists = "EXISTS key";
     Command *cmdExists = parse_cmd_string(cmdStringExists, strlen(cmdStringExists));
     char *existsResponse = exists_command(cmdExists);
 
@@ -293,7 +293,7 @@ bool test_exists_command()
     }
 
     // insert a key
-    char *cmdStringSet = "set key value";
+    char *cmdStringSet = "SET key value";
     Command *cmdSet = parse_cmd_string(cmdStringSet, strlen(cmdStringSet));
     set_command(cmdSet, true);
 
@@ -324,19 +324,19 @@ bool test_meta_commands()
     bool aof_restore = true;
 
     // insert a string,hashtable, list, sorted set
-    char *cmdString = "set key value";
+    char *cmdString = "SET key value";
     Command *cmd = parse_cmd_string(cmdString, strlen(cmdString));
     set_command(cmd, aof_restore);
 
-    cmdString = "hset hash key value";
+    cmdString = "HSET hash key value";
     cmd = parse_cmd_string(cmdString, strlen(cmdString));
     hset_command(cmd, aof_restore);
 
-    cmdString = "lpush list value";
+    cmdString = "LPUSH list value";
     cmd = parse_cmd_string(cmdString, strlen(cmdString));
     lpush_command(cmd, aof_restore);
 
-    cmdString = "zadd sortedset 1 value";
+    cmdString = "ZADD sortedset 1 value";
     cmd = parse_cmd_string(cmdString, strlen(cmdString));
     zadd_command(cmd, aof_restore);
 
@@ -355,7 +355,7 @@ bool test_meta_commands()
     }
 
     // test del command
-    cmdString = "del key";
+    cmdString = "DEL key";
 
     cmd = parse_cmd_string(cmdString, strlen(cmdString));
     del_command(cmd, aof_restore);
@@ -369,7 +369,7 @@ bool test_meta_commands()
     }
 
     // test flushall command
-    cmdString = "flushall";
+    cmdString = "FLUSHALL";
     cmd = parse_cmd_string(cmdString, strlen(cmdString));
     flushall_cmd(cmd, aof_restore);
 
@@ -403,7 +403,7 @@ bool test_hashtable_commands()
     test_init();
 
     // test hset command
-    char *cmdString = "hset hash key value";
+    char *cmdString = "HSET hash key value";
     Command *cmd = parse_cmd_string(cmdString, strlen(cmdString));
     hset_command(cmd, aof_restore);
 
@@ -430,7 +430,7 @@ bool test_hashtable_commands()
     }
 
     // test hexists command
-    cmdString = "hexists hash key";
+    cmdString = "HEXISTS hash key";
     cmd = parse_cmd_string(cmdString, strlen(cmdString));
     char *response = hexists_command(cmd);
 
@@ -446,7 +446,7 @@ bool test_hashtable_commands()
     }
 
     // test get command
-    cmdString = "hget hash key";
+    cmdString = "HGET hash key";
     cmd = parse_cmd_string(cmdString, strlen(cmdString));
     response = hget_command(cmd);
 
@@ -469,7 +469,7 @@ bool test_hashtable_commands()
     }
 
     // test hdel command
-    cmdString = "hdel hash key";
+    cmdString = "HDEL hash key";
     cmd = parse_cmd_string(cmdString, strlen(cmdString));
     hdel_command(cmd, aof_restore);
 
@@ -492,7 +492,7 @@ bool test_list_commands()
     test_init();
 
     // test lpush command
-    char *cmdString = "lpush list value";
+    char *cmdString = "LPUSH list value";
     Command *cmd = parse_cmd_string(cmdString, strlen(cmdString));
     lpush_command(cmd, aof_restore);
 
@@ -521,7 +521,7 @@ bool test_list_commands()
     }
 
     // test rpush command
-    cmdString = "rpush list value2";
+    cmdString = "RPUSH list value2";
     cmd = parse_cmd_string(cmdString, strlen(cmdString));
     rpush_command(cmd, aof_restore);
 
@@ -534,7 +534,7 @@ bool test_list_commands()
     }
 
     // test lpop command
-    cmdString = "lpop list";
+    cmdString = "LPOP list";
     cmd = parse_cmd_string(cmdString, strlen(cmdString));
     lpop_command(cmd, aof_restore);
 
@@ -546,7 +546,7 @@ bool test_list_commands()
     }
 
     // test rpop command
-    cmdString = "rpop list";
+    cmdString = "RPOP list";
     cmd = parse_cmd_string(cmdString, strlen(cmdString));
     rpop_command(cmd, aof_restore);
 
@@ -558,7 +558,7 @@ bool test_list_commands()
     }
 
     // test llen command
-    cmdString = "llen list";
+    cmdString = "LLEN list";
     cmd = parse_cmd_string(cmdString, strlen(cmdString));
     char *response = llen_cmd(cmd);
 
@@ -576,11 +576,11 @@ bool test_list_commands()
     }
 
     // test lset
-    cmdString = "lpush list value";
+    cmdString = "LPUSH list value";
     cmd = parse_cmd_string(cmdString, strlen(cmdString));
     lpush_command(cmd, aof_restore);
 
-    cmdString = "lset list 0 newvalue";
+    cmdString = "LSET list 0 newvalue";
     cmd = parse_cmd_string(cmdString, strlen(cmdString));
     lset_cmd(cmd, aof_restore);
 
@@ -592,29 +592,29 @@ bool test_list_commands()
     }
 
     // remove all elements
-    cmdString = "lpop list";
+    cmdString = "LPOP list";
     cmd = parse_cmd_string(cmdString, strlen(cmdString));
     lpop_command(cmd, aof_restore);
 
     // test ltrim
-    cmdString = "lpush list value2";
+    cmdString = "LPUSH list value2";
     cmd = parse_cmd_string(cmdString, strlen(cmdString));
     lpush_command(cmd, aof_restore);
 
-    cmdString = "lpush list value";
+    cmdString = "LPUSH list value";
     cmd = parse_cmd_string(cmdString, strlen(cmdString));
     lpush_command(cmd, aof_restore);
 
-    cmdString = "rpush list value3";
+    cmdString = "RPUSH list value3";
     cmd = parse_cmd_string(cmdString, strlen(cmdString));
     rpush_command(cmd, aof_restore);
 
-    cmdString = "rpush list value4";
+    cmdString = "RPUSH list value4";
     cmd = parse_cmd_string(cmdString, strlen(cmdString));
     rpush_command(cmd, aof_restore);
 
     // trim from 1 to 2
-    cmdString = "ltrim list 1 2";
+    cmdString = "LTRIM list 1 2";
     cmd = parse_cmd_string(cmdString, strlen(cmdString));
     ltrim_cmd(cmd, aof_restore);
 
@@ -657,7 +657,7 @@ bool test_zset_commands()
     test_init();
 
     // test zadd command
-    char *cmdString = "zadd sortedset 1 value";
+    char *cmdString = "ZADD sortedset 1 value";
     Command *cmd = parse_cmd_string(cmdString, strlen(cmdString));
     zadd_command(cmd, aof_restore);
 
@@ -678,7 +678,7 @@ bool test_zset_commands()
     }
 
     // test zscore
-    cmdString = "zscore sortedset value";
+    cmdString = "ZSCORE sortedset value";
     cmd = parse_cmd_string(cmdString, strlen(cmdString));
     char *response = zscore_cmd(cmd);
 
@@ -695,7 +695,7 @@ bool test_zset_commands()
     }
 
     // test zrem
-    cmdString = "zrem sortedset value";
+    cmdString = "ZREM sortedset value";
     cmd = parse_cmd_string(cmdString, strlen(cmdString));
     zrem_command(cmd, aof_restore);
 

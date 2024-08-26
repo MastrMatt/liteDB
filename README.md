@@ -137,6 +137,7 @@ liteDB supports a variety of commands across different data structures:
 
 ### Meta Commands
 
+-   PING - Returns PONG
 -   EXISTS: (key) - Checks if the specified key exists in the database. Returns 1 if it does else, 0.
 -   DEL: (key) - Deletes the value specified by key. Returns the amount of keys deleted
 -   KEYS - Returns all the key:value pairs in the database

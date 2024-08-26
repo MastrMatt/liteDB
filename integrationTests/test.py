@@ -52,7 +52,7 @@ class TestClientIntegration(unittest.TestCase):
 
     def test_client_server(self):
         # Send a simple set cmd to the server
-        self.client_process.stdin.write("set key1 value1\n")
+        self.client_process.stdin.write("SET key1 value1\n")
         self.client_process.stdin.flush()
 
         # give the server time to process the command
@@ -68,7 +68,7 @@ class TestClientIntegration(unittest.TestCase):
         self.assertEqual(response, expected_response)
 
         # Send a simple get cmd to the server
-        self.client_process.stdin.write("get key1\n")
+        self.client_process.stdin.write("GET key1\n")
         self.client_process.stdin.flush()
 
         # give the server time to process the command
@@ -81,7 +81,7 @@ class TestClientIntegration(unittest.TestCase):
         self.assertEqual(response, expected_response)
 
         # Send a simple del cmd to the server
-        self.client_process.stdin.write("del key1\n")
+        self.client_process.stdin.write("DEL key1\n")
         self.client_process.stdin.flush()
 
         # give the server time to process the command

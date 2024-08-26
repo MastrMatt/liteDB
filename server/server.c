@@ -2023,119 +2023,119 @@ char *execute_command(Command *cmd, bool aof_restore)
     {
         return_response = error_response("Command name was not specified");
     }
-    else if (strcmp(cmd->name, "ping") == 0)
+    else if (strcmp(cmd->name, "PING") == 0)
     {
         return_response = get_response(STRING, "pong");
     }
-    else if (strcmp(cmd->name, "exists") == 0)
+    else if (strcmp(cmd->name, "EXISTS") == 0)
     {
         return_response = exists_command(cmd);
     }
-    else if (strcmp(cmd->name, "del") == 0)
+    else if (strcmp(cmd->name, "DEL") == 0)
     {
 
         return_response = del_command(cmd, aof_restore);
     }
-    else if (strcmp(cmd->name, "keys") == 0)
+    else if (strcmp(cmd->name, "KEYS") == 0)
     {
 
         return_response = keys_command();
     }
-    else if (strcmp(cmd->name, "flushall") == 0)
+    else if (strcmp(cmd->name, "FLUSHALL") == 0)
     {
 
         return_response = flushall_cmd(cmd, aof_restore);
     }
-    else if (strcmp(cmd->name, "get") == 0)
+    else if (strcmp(cmd->name, "GET") == 0)
     {
 
         return_response = get_command(cmd);
     }
-    else if (strcmp(cmd->name, "set") == 0)
+    else if (strcmp(cmd->name, "SET") == 0)
     {
 
         return_response = set_command(cmd, aof_restore);
     }
-    else if (strcmp(cmd->name, "hexists") == 0)
+    else if (strcmp(cmd->name, "HEXISTS") == 0)
     {
         return_response = hexists_command(cmd);
     }
-    else if (strcmp(cmd->name, "hset") == 0)
+    else if (strcmp(cmd->name, "HSET") == 0)
     {
 
         return_response = hset_command(cmd, aof_restore);
     }
-    else if (strcmp(cmd->name, "hget") == 0)
+    else if (strcmp(cmd->name, "HGET") == 0)
     {
 
         return_response = hget_command(cmd);
     }
-    else if (strcmp(cmd->name, "hdel") == 0)
+    else if (strcmp(cmd->name, "HDEL") == 0)
     {
 
         return_response = hdel_command(cmd, aof_restore);
     }
-    else if (strcmp(cmd->name, "hgetall") == 0)
+    else if (strcmp(cmd->name, "HGETALL") == 0)
     {
 
         return_response = hgetall_command(cmd);
     }
-    else if (strcmp(cmd->name, "lpush") == 0)
+    else if (strcmp(cmd->name, "LPUSH") == 0)
     {
 
         return_response = lpush_command(cmd, aof_restore);
     }
-    else if (strcmp(cmd->name, "rpush") == 0)
+    else if (strcmp(cmd->name, "RPUSH") == 0)
     {
 
         return_response = rpush_command(cmd, aof_restore);
     }
-    else if (strcmp(cmd->name, "lpop") == 0)
+    else if (strcmp(cmd->name, "LPOP") == 0)
     {
 
         return_response = lpop_command(cmd, aof_restore);
     }
-    else if (strcmp(cmd->name, "rpop") == 0)
+    else if (strcmp(cmd->name, "RPOP") == 0)
     {
 
         return_response = rpop_command(cmd, aof_restore);
     }
-    else if (strcmp(cmd->name, "llen") == 0)
+    else if (strcmp(cmd->name, "LLEN") == 0)
     {
 
         return_response = llen_cmd(cmd);
     }
-    else if (strcmp(cmd->name, "lrange") == 0)
+    else if (strcmp(cmd->name, "LRANGE") == 0)
     {
 
         return_response = lrange_cmd(cmd);
     }
-    else if (strcmp(cmd->name, "ltrim") == 0)
+    else if (strcmp(cmd->name, "LTRIM") == 0)
     {
 
         return_response = ltrim_cmd(cmd, aof_restore);
     }
-    else if (strcmp(cmd->name, "lset") == 0)
+    else if (strcmp(cmd->name, "LSET") == 0)
     {
 
         return_response = lset_cmd(cmd, aof_restore);
     }
-    else if (strcmp(cmd->name, "zadd") == 0)
+    else if (strcmp(cmd->name, "ZADD") == 0)
     {
 
         return_response = zadd_command(cmd, aof_restore);
     }
-    else if (strcmp(cmd->name, "zrem") == 0)
+    else if (strcmp(cmd->name, "ZREM") == 0)
     {
 
         return_response = zrem_command(cmd, aof_restore);
     }
-    else if (strcmp(cmd->name, "zscore") == 0)
+    else if (strcmp(cmd->name, "ZSCORE") == 0)
     {
 
         return_response = zscore_cmd(cmd);
     }
-    else if (strcmp(cmd->name, "zquery") == 0)
+    else if (strcmp(cmd->name, "ZQUERY") == 0)
     {
         return_response = zquery_cmd(cmd);
     }
