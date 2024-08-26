@@ -2025,7 +2025,7 @@ char *execute_command(Command *cmd, bool aof_restore)
     }
     else if (strcmp(cmd->name, "PING") == 0)
     {
-        return_response = get_response(STRING, "pong");
+        return_response = get_response(STRING, "PONG");
     }
     else if (strcmp(cmd->name, "EXISTS") == 0)
     {
