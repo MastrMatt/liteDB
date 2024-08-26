@@ -81,15 +81,20 @@ Command *parse_cmd_string(char *cmd_string, int size);
 char *execute_command(Command *cmd, bool aof_restore);
 
 void global_table_del(char *key, char *value, ValueType type);
+char *exists_command(Command *cmd);
 char *del_command(Command *cmd, bool aof_restore);
 char *keys_command();
 char *flushall_cmd(Command *cmd, bool aof_restore);
+
 char *get_command(Command *cmd);
 char *set_command(Command *cmd, bool aof_restore);
+
+char *hexists_command(Command *cmd);
 char *hset_command(Command *cmd, bool aof_restore);
 char *hget_command(Command *cmd);
 char *hdel_command(Command *cmd, bool aof_restore);
 char *hgetall_command(Command *cmd);
+
 char *lpush_command(Command *cmd, bool aof_restore);
 char *rpush_command(Command *cmd, bool aof_restore);
 char *lpop_command(Command *cmd, bool aof_restore);
@@ -98,6 +103,7 @@ char *llen_cmd(Command *cmd);
 char *lrange_cmd(Command *cmd);
 char *ltrim_cmd(Command *cmd, bool aof_restore);
 char *lset_cmd(Command *cmd, bool aof_restore);
+
 char *zadd_command(Command *cmd, bool aof_restore);
 char *zrem_command(Command *cmd, bool aof_restore);
 char *zscore_cmd(Command *cmd);

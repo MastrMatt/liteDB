@@ -137,6 +137,7 @@ liteDB supports a variety of commands across different data structures:
 
 ### Meta Commands
 
+-   EXISTS: (key) - Checks if the specified key exists in the database. Returns 1 if it does else, 0.
 -   DEL: (key) - Deletes the value specified by key. Returns the amount of keys deleted
 -   KEYS - Returns all the key:value pairs in the database
 -   FLUSHALL - Removes all the key:value pairs in the database. Returns nil
@@ -148,6 +149,7 @@ liteDB supports a variety of commands across different data structures:
 
 ### Hashtable
 
+-   HEXISTS: (key, field) - checks if a field exists in a hash specified by key. Returns an integer response indicating the number of fields found.
 -   HSET: (key, field, value) - Sets a field:value pair in the hash specified by key. If the key does not exist, it will create it. It the field already exists, it overrides the previous value. Returns nil
 -   HGET: (key, field) - Gets the value of field from the hash specified by key. Returns the value
 -   HDEL: (key, field) - Deletes a field from the hash specified by key. Returns an integer for how many elements were removed

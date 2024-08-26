@@ -371,6 +371,35 @@ void global_table_del(char *key, char *value, ValueType type)
 }
 
 /**
+ *  EXISTS (key) -  Checks if the specified key exists in the database. Returns an integer response, 1 if the key exists, 0 otherwise.
+ *
+ * @param cmd Command structure containing the (key)
+ * @return char* response
+ */
+char *exists_command(Command *cmd)
+{
+
+    int elem_exists = 0;
+
+    if (cmd->num_args != 1)
+    {
+        return error_response("exists command requires 1 argument (key)");
+    }
+
+    HashNode *fetched_node = hget(global_table, cmd->args[0]);
+    if (!fetched_node)
+    {
+        elem_exists = 0;
+    }
+    else
+    {
+        elem_exists = 1;
+    }
+
+    return get_response(INTEGER, &elem_exists);
+}
+
+/**
  * @brief Deletes a key-value pair from the global table ,where value is a string and handles AOF logging if necessary.
  *
  * @param cmd Command structure containing the (key)
@@ -578,6 +607,57 @@ char *set_command(Command *cmd, bool aof_restore)
     {
         return NULL;
     }
+}
+
+/**
+ * The HEXISTS (key, field) command checks if a field exists in a hash . Returns an integer response indicating the number of fields found.
+ *
+ * @param cmd Command structure specifying the (key, field)
+ * @return char* response
+ */
+char *hexists_command(Command *cmd)
+{
+    int elem_exists = 0;
+
+    if (cmd->num_args < 2)
+    {
+        return error_response("hexists command requires at least 2 arguments (key, field)");
+    }
+
+    char *global_table_key = cmd->args[0];
+    char *field_key = cmd->args[1];
+
+    // fetch the hashtable from the global table
+    HashNode *fetched_node = hget(global_table, global_table_key);
+
+    if (!fetched_node)
+    {
+        fprintf(stderr, "key not in database\n");
+        return error_response("key not in database");
+    }
+
+    // check if the value is a hashtable
+    if (fetched_node->valueType != HASHTABLE)
+    {
+        fprintf(stderr, "key is not for a hashtable\n");
+        return error_response("key is not for a hashtable");
+    }
+
+    HashTable *cur_table = (HashTable *)fetched_node->value;
+
+    // check if the field exists in the hashtable
+    HashNode *ret_node = hget(cur_table, field_key);
+
+    if (ret_node)
+    {
+        elem_exists = 1;
+    }
+    else
+    {
+        elem_exists = 0;
+    }
+
+    return get_response(INTEGER, &elem_exists);
 }
 
 /**
@@ -1947,15 +2027,9 @@ char *execute_command(Command *cmd, bool aof_restore)
     {
         return_response = get_response(STRING, "pong");
     }
-    else if (strcmp(cmd->name, "get") == 0)
+    else if (strcmp(cmd->name, "exists") == 0)
     {
-
-        return_response = get_command(cmd);
-    }
-    else if (strcmp(cmd->name, "set") == 0)
-    {
-
-        return_response = set_command(cmd, aof_restore);
+        return_response = exists_command(cmd);
     }
     else if (strcmp(cmd->name, "del") == 0)
     {
@@ -1971,6 +2045,20 @@ char *execute_command(Command *cmd, bool aof_restore)
     {
 
         return_response = flushall_cmd(cmd, aof_restore);
+    }
+    else if (strcmp(cmd->name, "get") == 0)
+    {
+
+        return_response = get_command(cmd);
+    }
+    else if (strcmp(cmd->name, "set") == 0)
+    {
+
+        return_response = set_command(cmd, aof_restore);
+    }
+    else if (strcmp(cmd->name, "hexists") == 0)
+    {
+        return_response = hexists_command(cmd);
     }
     else if (strcmp(cmd->name, "hset") == 0)
     {

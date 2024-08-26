@@ -273,6 +273,48 @@ bool test_string_commands()
     return true;
 }
 
+bool test_exists_command()
+{
+    // test exists on key that does not exist
+    char *cmdStringExists = "exists key";
+    Command *cmdExists = parse_cmd_string(cmdStringExists, strlen(cmdStringExists));
+    char *existsResponse = exists_command(cmdExists);
+
+    if (existsResponse[0] != SER_INT)
+    {
+        fprintf(stderr, "response type should be integer\n");
+        return false;
+    }
+
+    if (*(int *)(existsResponse + 5) != 0)
+    {
+        fprintf(stderr, "response value should be 0\n");
+        return false;
+    }
+
+    // insert a key
+    char *cmdStringSet = "set key value";
+    Command *cmdSet = parse_cmd_string(cmdStringSet, strlen(cmdStringSet));
+    set_command(cmdSet, true);
+
+    // test exists on key that exists
+    existsResponse = exists_command(cmdExists);
+
+    if (existsResponse[0] != SER_INT)
+    {
+        fprintf(stderr, "response type should be integer\n");
+        return false;
+    }
+
+    if (*(int *)(existsResponse + 5) != 1)
+    {
+        fprintf(stderr, "response value should be 1\n");
+        return false;
+    }
+
+    return true;
+}
+
 bool test_meta_commands()
 {
 
@@ -340,6 +382,13 @@ bool test_meta_commands()
         return false;
     }
 
+    // test exists command
+    if (!test_exists_command())
+    {
+        fprintf(stderr, "exists command failed\n");
+        return false;
+    }
+
     // reset global table
     test_reset();
 
@@ -380,10 +429,26 @@ bool test_hashtable_commands()
         return false;
     }
 
+    // test hexists command
+    cmdString = "hexists hash key";
+    cmd = parse_cmd_string(cmdString, strlen(cmdString));
+    char *response = hexists_command(cmd);
+
+    if (response[0] != SER_INT)
+    {
+        fprintf(stderr, "hexists failed, response type should be integer\n");
+    }
+
+    if (*(int *)(response + 5) != 1)
+    {
+        fprintf(stderr, "hexists failed, response value should be 1\n");
+        return false;
+    }
+
     // test get command
     cmdString = "hget hash key";
     cmd = parse_cmd_string(cmdString, strlen(cmdString));
-    char *response = hget_command(cmd);
+    response = hget_command(cmd);
 
     if (response[0] != SER_STR)
     {
