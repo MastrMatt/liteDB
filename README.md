@@ -145,19 +145,20 @@ liteDB supports a variety of commands across different data structures:
 
 ### Strings
 
--   GET: (key) - Get the value of a key, it the key does not exist return an error. Returns the value
+-   GET: (key) - Get the value of a key, it the key does not exist return nil. Returns the value
 -   SET: (key, value) - Sets a new key:value pair in the hashtable, it the key already exists returns an error. Returns nil
 
 ### Hashtable
 
 -   HEXISTS: (key, field) - checks if a field exists in a hash specified by key. Returns an integer response indicating the number of fields found.
 -   HSET: (key, field, value) - Sets a field:value pair in the hash specified by key. If the key does not exist, it will create it. It the field already exists, it overrides the previous value. Returns nil
--   HGET: (key, field) - Gets the value of field from the hash specified by key. Returns the value
+-   HGET: (key, field) - Gets the value of field from the hash specified by key. Returns the value. If the key, or field don't exist in database, return nil
 -   HDEL: (key, field) - Deletes a field from the hash specified by key. Returns an integer for how many elements were removed
 -   HGETALL: (key) - Returns all fields and values of the hash specified by key.
 
 ### Lists
 
+-   LEXISTS : (key, value) - Checks if a value exists in a list. Returns an integer response indicating the number of values found.
 -   LPUSH, RPUSH: (key, value) - Adds value to the list specified by key. If key does not exist, a new list is created. Returns an integer for how many elements were added
 -   LPOP, RPOP: (key, value) - Removes and returns the corresponding element of the list specified by key. Returns an integer for how many elements were removed
 -   LLEN: (key) - Returns the length of the list specified by key

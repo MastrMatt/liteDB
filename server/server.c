@@ -420,7 +420,7 @@ char *del_command(Command *cmd, bool aof_restore)
     HashNode *fetched_node = hget(global_table, cmd->args[0]);
     if (!fetched_node)
     {
-        return error_response("Key not in database");
+        return error_response("key not in database");
     }
 
     // execute delete
@@ -529,7 +529,7 @@ char *flushall_cmd(Command *cmd, bool aof_restore)
 }
 
 /**
- * @brief Executes a GET command and returns the corresponding response string according to the liteDB protocol.
+ * @brief Get the value of a key, it the key does not exist return nil. Returns the value
  *
  * @param cmd Command structure specifying the (key)
  *
@@ -548,7 +548,7 @@ char *get_command(Command *cmd)
     HashNode *fetched_node = hget(global_table, cmd->args[0]);
     if (!fetched_node)
     {
-        return error_response("Key not in database");
+        return null_response();
     }
 
     // get the value from the hash node
@@ -752,7 +752,7 @@ char *hset_command(Command *cmd, bool aof_restore)
 /**
  * @brief Executes an HGET command and returns the corresponding response string according to the liteDB protocol.
  *
- * The HGET command retrieves the value of a field in a hash table. Returns an error response if the key or field does not exist.
+ * Gets the value of field from the hash specified by key. Returns the value. If the key, or field don't exist in database, return nil
  *
  * @param cmd Command structure specifying the (key, field)
  *
@@ -772,7 +772,7 @@ char *hget_command(Command *cmd)
     HashNode *fetched_node = hget(global_table, global_table_key);
     if (!fetched_node)
     {
-        return error_response("key not in database");
+        return null_response();
     }
 
     // check if the value is a hashtable
@@ -787,7 +787,7 @@ char *hget_command(Command *cmd)
     HashNode *ret_node = hget(cur_table, field_key);
     if (!ret_node)
     {
-        return error_response("field not in hashtable");
+        return null_response();
     }
 
     return get_response(ret_node->valueType, ret_node->value);
@@ -956,7 +956,54 @@ char *hgetall_command(Command *cmd)
     return buffer;
 }
 
-// returns an integer response representing the number of elements added
+/**
+ *  LEXISTS (key, value) - Checks if a value exists in a list. Returns an integer response indicating the number of values found.
+ *
+ * @param cmd Command structure specifying the (key, value)
+ * @return char* response
+ *
+ */
+char *lexists_command(Command *cmd)
+{
+    int elem_exists = 0;
+
+    if (cmd->num_args < 2)
+    {
+        return error_response("lexists command requires at least 2 arguments (key, value)");
+    }
+
+    char *global_table_key = cmd->args[0];
+    char *value = cmd->args[1];
+
+    // fetch the list from the global table
+    HashNode *fetched_node = hget(global_table, global_table_key);
+    if (!fetched_node)
+    {
+        return error_response("key not in database");
+    }
+
+    // check if the value is a list
+    if (fetched_node->valueType != LIST)
+    {
+        return error_response("key is not for a list");
+    }
+
+    List *list = (List *)fetched_node->value;
+
+    // check if the value exists in the list
+    int ret = list_contains(list, value, LIST_TYPE_STRING);
+    if (ret)
+    {
+        elem_exists = 1;
+    }
+    else
+    {
+        elem_exists = 0;
+    }
+
+    return get_response(INTEGER, &elem_exists);
+}
+
 /**
  * @brief Executes an LPUSH command and optionally logs the action to the AOF file.
  *
@@ -2079,6 +2126,10 @@ char *execute_command(Command *cmd, bool aof_restore)
     {
 
         return_response = hgetall_command(cmd);
+    }
+    else if (strcmp(cmd->name, "LEXISTS") == 0)
+    {
+        return_response = lexists_command(cmd);
     }
     else if (strcmp(cmd->name, "LPUSH") == 0)
     {

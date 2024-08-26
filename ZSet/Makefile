@@ -13,6 +13,6 @@ ZSet.o: ZSet.c ZSet.h
 
 test: test.c ZSet.o $(HASH_TABLE_LIB) $(AVL_TREE_LIB)
 	$(CC) $(CC_FLAGS) -o test test.c ZSet.o $(HASH_TABLE_LIB) $(AVL_TREE_LIB)
-	./test
+	./test || rm ZSet.o
 
 

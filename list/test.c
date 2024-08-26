@@ -71,5 +71,20 @@ int main()
         printf("Test 6 failed\n");
     }
 
+    // test list_contains
+    List *list2 = list_init();
+    int intData = 123;
+    float floatData = 123.456;
+
+    list_linsert(list2, test_strings[0], LIST_TYPE_STRING);
+    list_linsert(list2, &intData, LIST_TYPE_INT);
+    list_linsert(list2, &floatData, LIST_TYPE_FLOAT);
+
+    if (!list_contains(list2, test_strings[0], LIST_TYPE_STRING) || !list_contains(list2, &intData, LIST_TYPE_INT) || !list_contains(list2, &floatData, LIST_TYPE_FLOAT))
+    {
+        printf("Test 7 failed\n");
+        exit(EXIT_FAILURE);
+    }
+
     printf("All tests passed\n");
 }

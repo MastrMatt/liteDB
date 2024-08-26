@@ -1,6 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <math.h>
+#include <stdbool.h>
 
 typedef enum ListType
 {
@@ -27,6 +29,7 @@ typedef struct List
 
 List *list_init();
 
+bool list_contains(List *list, void *data, ListType listType);
 int list_linsert(List *list, void *data, ListType listType);
 int list_rinsert(List *list, void *data, ListType listType);
 int list_lremove(List *list);

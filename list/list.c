@@ -2,6 +2,8 @@
 
 #include "list.h"
 
+#define EPSILON 1e-9f
+
 //
 /**
  * @brief Initializes a new doubly list
@@ -17,6 +19,52 @@ List *list_init()
     new_list->size = 0;
 
     return new_list;
+}
+
+bool compare_float(float a, float b)
+{
+    return fabs(a - b) < EPSILON;
+}
+
+/**
+ *  @brief Checks if a list contains a value
+ *
+ *  @param list The list to check
+ *  @param data The data to check for
+ *  @param listType The type of the data
+ */
+bool list_contains(List *list, void *data, ListType listType)
+{
+    ListNode *current = list->head;
+
+    while (current)
+    {
+        if (listType == LIST_TYPE_INT)
+        {
+            if (*(int *)current->data == *(int *)data)
+            {
+                return true;
+            }
+        }
+        else if (listType == LIST_TYPE_FLOAT)
+        {
+            if (compare_float(*(float *)current->data, *(float *)data))
+            {
+                return true;
+            }
+        }
+        else if (listType == LIST_TYPE_STRING)
+        {
+            if (strcmp((char *)current->data, (char *)data) == 0)
+            {
+                return true;
+            }
+        }
+
+        current = current->next;
+    }
+
+    return false;
 }
 
 /**
@@ -54,6 +102,18 @@ int list_linsert(List *list, void *data, ListType listType)
 
         *(float *)new_node->data = *(float *)data;
         new_node->listType = LIST_TYPE_FLOAT;
+    }
+    else if (listType == LIST_TYPE_INT)
+    {
+        new_node->data = calloc(1, sizeof(int));
+        if (new_node->data == NULL)
+        {
+            fprintf(stderr, "Memory allocation failed\n");
+            exit(EXIT_FAILURE);
+        }
+
+        *(int *)new_node->data = *(int *)data;
+        new_node->listType = LIST_TYPE_INT;
     }
     else
     {
@@ -116,6 +176,18 @@ int list_rinsert(List *list, void *data, ListType listType)
 
         *(float *)new_node->data = *(float *)data;
         new_node->listType = LIST_TYPE_FLOAT;
+    }
+    else if (listType == LIST_TYPE_INT)
+    {
+        new_node->data = calloc(1, sizeof(int));
+        if (new_node->data == NULL)
+        {
+            fprintf(stderr, "Memory allocation failed\n");
+            exit(EXIT_FAILURE);
+        }
+
+        *(int *)new_node->data = *(int *)data;
+        new_node->listType = LIST_TYPE_INT;
     }
     else
     {
