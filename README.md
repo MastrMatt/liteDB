@@ -10,7 +10,7 @@ To spin up a server:
 
 ```bash
 
-docker run -p 9255:9255 -it mastrmatt/litedb:latest
+docker run -p 9255:9255 --name liteDB -it mastrmatt/litedb:latest
 
 ```
 
