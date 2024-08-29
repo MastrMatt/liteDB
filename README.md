@@ -160,10 +160,13 @@ liteDB supports a variety of commands across different data structures:
 
 -   LEXISTS : (key, value) - Checks if a value exists in a list. Returns an integer response indicating the number of values found.
 -   LPUSH, RPUSH: (key, value) - Adds value to the list specified by key. If key does not exist, a new list is created. Returns an integer for how many elements were added
--   LPOP, RPOP: (key, value) - Removes and returns the corresponding element of the list specified by key. Returns an integer for how many elements were removed
+-   LPOP, RPOP: (key, value) - Removes and returns the corresponding element of the list specified by key. Returns the returned element.
 -   LLEN: (key) - Returns the length of the list specified by key
--   LRANGE: (key, start, stop) - Returns values from index start up to and including index stop from the list. The list is specified by key.
--   LTRIM: (key, start, stop) - Trims a list from index start up to and including index stop. The list is specified by key. Returns nil
+
+-   LRANGE: (key, start, stop) - Returns values from index start up to and including index stop from the list. The list is specified by key. start and end can also be negative numbers indicating offsets from the end of the list, where -1 is the last element of the list. Out of range indexes will not produce an error. If start is larger than the end of the list, an empty list is returned. If stop is larger than the actual end of the list,will go until the last element of the list
+
+-   LTRIM: (key, start, stop) - Trims a list from index start up to and including index stop. The list is specified by key. Returns nil . start and end can also be negative numbers indicating offsets from the end of the list, where -1 is the last element of the list. Behaves similarly to LRANGE for out of range indexes
+
 -   LSET: (key, index, value) - Sets the index of the list to contain value. The list is specified by the key. Returns nil
 
 ### Sorted Sets
@@ -179,8 +182,17 @@ liteDB supports a variety of commands across different data structures:
     ZrangeByScore: ZQUERY with (key score "" offset limit),
     Zrange by rank: ZQUERY with (key -inf "" offset limit)
 
+## Errors
+
+-   All commands that modify the state of the db return an error response with the corresponding error message if they were unsucessful in doing so.
+
+-   All query commands either return the equivalent empty response ( 0 , []) or the null response if they was an error in retrieving the data.
+
+-   Error responses are also returned for all commands if the format of the command is incorrect or some internal error occurs on the db server.
+
 ## Planned Features
 
+-   Add more test coverage, specifically integration/e2e tests
 -   Client connection timers for idle detection and disconnection.
 -   Time-to-live (TTL) for data in the global hashtable for caching purposes.
 -   Automatic rewriting of the AOF file when it exceeds a certain size threshold.

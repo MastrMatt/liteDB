@@ -4,7 +4,6 @@
 
 #define EPSILON 1e-9f
 
-//
 /**
  * @brief Initializes a new doubly list
  *

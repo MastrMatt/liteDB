@@ -124,6 +124,35 @@ void connection_io(Conn *conn)
 }
 
 /**
+ * @brief Creates an array response with 0 elements (empty array)
+ *
+ * @return char* response
+ */
+char *empty_array_response()
+{
+
+    SerialType type = SER_ARR;
+    int num_elements = 0;
+
+    // null terminate the response
+    char *response = calloc(1 + 4, sizeof(char));
+
+    if (!response)
+    {
+        fprintf(stderr, "Failed to allocate memory for empty array response\n");
+        exit(EXIT_FAILURE);
+    }
+
+    // write the type of the response, 1 byte
+    memcpy(response, &type, 1);
+
+    // write the number of elements in the array, 4 bytes
+    memcpy(response + 1, &num_elements, 4);
+
+    return response;
+}
+
+/**
  * @brief Generates a value response according to the liteDB protocol
  *
  *  See README for more information on protocol
@@ -371,6 +400,15 @@ void global_table_del(char *key, char *value, ValueType type)
 }
 
 /**
+ * @brief Ping command to check if the server is alive, returns PONG
+ */
+char *ping_command()
+{
+    ValueType type = STRING;
+    return get_response(type, "PONG");
+}
+
+/**
  *  EXISTS (key) -  Checks if the specified key exists in the database. Returns an integer response, 1 if the key exists, 0 otherwise.
  *
  * @param cmd Command structure containing the (key)
@@ -379,6 +417,7 @@ void global_table_del(char *key, char *value, ValueType type)
 char *exists_command(Command *cmd)
 {
 
+    ValueType response_type = INTEGER;
     int elem_exists = 0;
 
     if (cmd->num_args != 1)
@@ -396,7 +435,7 @@ char *exists_command(Command *cmd)
         elem_exists = 1;
     }
 
-    return get_response(INTEGER, &elem_exists);
+    return get_response(response_type, &elem_exists);
 }
 
 /**
@@ -410,6 +449,7 @@ char *exists_command(Command *cmd)
 char *del_command(Command *cmd, bool aof_restore)
 {
 
+    ValueType response_type = INTEGER;
     int elem_removed = 0;
 
     if (cmd->num_args != 1)
@@ -430,7 +470,7 @@ char *del_command(Command *cmd, bool aof_restore)
     if (!aof_restore)
     {
         handle_aof_write(cmd);
-        return get_response(INTEGER, &elem_removed);
+        return get_response(response_type, &elem_removed);
     }
     else
     {
@@ -617,6 +657,7 @@ char *set_command(Command *cmd, bool aof_restore)
  */
 char *hexists_command(Command *cmd)
 {
+    int response_type = INTEGER;
     int elem_exists = 0;
 
     if (cmd->num_args < 2)
@@ -633,14 +674,14 @@ char *hexists_command(Command *cmd)
     if (!fetched_node)
     {
         fprintf(stderr, "key not in database\n");
-        return error_response("key not in database");
+        return get_response(response_type, 0);
     }
 
     // check if the value is a hashtable
     if (fetched_node->valueType != HASHTABLE)
     {
         fprintf(stderr, "key is not for a hashtable\n");
-        return error_response("key is not for a hashtable");
+        return get_response(response_type, 0);
     }
 
     HashTable *cur_table = (HashTable *)fetched_node->value;
@@ -657,7 +698,7 @@ char *hexists_command(Command *cmd)
         elem_exists = 0;
     }
 
-    return get_response(INTEGER, &elem_exists);
+    return get_response(response_type, &elem_exists);
 }
 
 /**
@@ -877,13 +918,15 @@ char *hgetall_command(Command *cmd)
     HashNode *fetched_node = hget(global_table, global_table_key);
     if (!fetched_node)
     {
-        return error_response("key not in database");
+        fprintf(stderr, "key not in database\n");
+        return empty_array_response();
     }
 
     // check if the value is a hashtable
     if (fetched_node->valueType != HASHTABLE)
     {
-        return error_response("key is not for a hashtable");
+        fprintf(stderr, "key is not for a hashtable");
+        return empty_array_response();
     }
 
     HashTable *cur_table = (HashTable *)fetched_node->value;
@@ -965,6 +1008,7 @@ char *hgetall_command(Command *cmd)
  */
 char *lexists_command(Command *cmd)
 {
+    ValueType response_type = INTEGER;
     int elem_exists = 0;
 
     if (cmd->num_args < 2)
@@ -979,13 +1023,15 @@ char *lexists_command(Command *cmd)
     HashNode *fetched_node = hget(global_table, global_table_key);
     if (!fetched_node)
     {
-        return error_response("key not in database");
+        fprintf(stderr, "key not in database\n");
+        return get_response(response_type, &elem_exists);
     }
 
     // check if the value is a list
     if (fetched_node->valueType != LIST)
     {
-        return error_response("key is not for a list");
+        fprintf(stderr, "key is not for a list\n");
+        return get_response(response_type, &elem_exists);
     }
 
     List *list = (List *)fetched_node->value;
@@ -1001,7 +1047,7 @@ char *lexists_command(Command *cmd)
         elem_exists = 0;
     }
 
-    return get_response(INTEGER, &elem_exists);
+    return get_response(response_type, &elem_exists);
 }
 
 /**
@@ -1146,7 +1192,7 @@ char *rpush_command(Command *cmd, bool aof_restore)
  */
 char *lpop_command(Command *cmd, bool aof_restore)
 {
-
+    ValueType response_type = INTEGER;
     int elem_removed;
 
     if (cmd->num_args < 1)
@@ -1183,7 +1229,7 @@ char *lpop_command(Command *cmd, bool aof_restore)
     if (!aof_restore)
     {
         handle_aof_write(cmd);
-        return get_response(INTEGER, &elem_removed);
+        return get_response(response_type, &elem_removed);
     }
     else
     {
@@ -1204,6 +1250,7 @@ char *lpop_command(Command *cmd, bool aof_restore)
 char *rpop_command(Command *cmd, bool aof_restore)
 {
 
+    ValueType response_type = INTEGER;
     int elem_removed = 0;
 
     if (cmd->num_args < 1)
@@ -1240,7 +1287,7 @@ char *rpop_command(Command *cmd, bool aof_restore)
     if (!aof_restore)
     {
         handle_aof_write(cmd);
-        return get_response(INTEGER, &elem_removed);
+        return get_response(response_type, &elem_removed);
     }
     else
     {
@@ -1259,6 +1306,7 @@ char *rpop_command(Command *cmd, bool aof_restore)
  */
 char *llen_cmd(Command *cmd)
 {
+    ValueType response_type = INTEGER;
     int len = 0;
 
     if (cmd->num_args < 1)
@@ -1272,13 +1320,15 @@ char *llen_cmd(Command *cmd)
     HashNode *fetched_node = hget(global_table, global_table_key);
     if (!fetched_node)
     {
-        return error_response("key not in database");
+        fprintf(stderr, "key not in database");
+        return get_response(response_type, &len);
     }
 
     // check if the value is a list
     if (fetched_node->valueType != LIST)
     {
-        return error_response("key is not for a list");
+        fprintf(stderr, "key is not for a list");
+        return get_response(response_type, &len);
     }
 
     List *list = (List *)fetched_node->value;
@@ -1286,7 +1336,7 @@ char *llen_cmd(Command *cmd)
     // get the length of the list
     len = list->size;
 
-    return get_response(INTEGER, &len);
+    return get_response(response_type, &len);
 }
 
 /**
@@ -1329,6 +1379,7 @@ char *lrange_cmd(Command *cmd)
     // Check if successfully converted to an integer
     if (!(*endptr == '\0') || (endptr == start_str))
     {
+        fprintf(stderr, "Failed to convert start to integer");
         return error_response("Failed to convert start to integer");
     }
 
@@ -1353,21 +1404,38 @@ char *lrange_cmd(Command *cmd)
 
     if (!fetched_node)
     {
-        return error_response("key not in database");
+        fprintf(stderr, "key not in database");
+        return empty_array_response();
     }
 
     // check if the value is a list
     if (fetched_node->valueType != LIST)
     {
-        return error_response("key is not for a list");
+        fprintf(stderr, "key is not for a list");
+        return empty_array_response();
     }
 
     List *list = (List *)fetched_node->value;
 
     // check bounds
-    if (start < 0 || stop < 0 || start >= list->size || stop >= list->size)
+    if (start < 0)
     {
-        return error_response("start or stop index out of bounds");
+        start = list->size + start;
+    }
+
+    if (stop < 0)
+    {
+        stop = list->size + stop;
+    }
+
+    if (stop < 0 || start < 0 || start >= list->size || start > stop)
+    {
+        return empty_array_response();
+    }
+
+    if (stop >= list->size)
+    {
+        stop = list->size - 1;
     }
 
     // get the values from the list
@@ -1382,7 +1450,8 @@ char *lrange_cmd(Command *cmd)
     ListNode *current = list_iget(list, start);
     if (!current)
     {
-        return error_response("Failed to get start value from list");
+        fprintf(stderr, "Failed to get start value from list");
+        return empty_array_response();
     }
 
     while (num_elements < elems_to_fetch)
@@ -1495,9 +1564,24 @@ char *ltrim_cmd(Command *cmd, bool aof_restore)
     List *list = (List *)fetched_node->value;
 
     // check bounds
-    if (start < 0 || stop < 0 || start >= list->size || stop >= list->size)
+    if (start < 0)
     {
-        return error_response("start or stop index out of bounds");
+        start = list->size + start;
+    }
+
+    if (stop < 0)
+    {
+        stop = list->size + stop;
+    }
+
+    if (stop < 0 || start < 0 || start >= list->size || start > stop)
+    {
+        return empty_array_response();
+    }
+
+    if (stop >= list->size)
+    {
+        stop = list->size - 1;
     }
 
     // trim the list
@@ -1795,13 +1879,15 @@ char *zscore_cmd(Command *cmd)
     HashNode *fetched_node = hget(global_table, zset_key);
     if (!fetched_node)
     {
-        return error_response("zset key not in database");
+        fprintf(stderr, "key not in database\n");
+        return null_response();
     }
 
     // check if the value is a ZSET
     if (fetched_node->valueType != ZSET)
     {
-        return error_response("key is not for a zset");
+        fprintf(stderr, "key is not for a zset\n");
+        return null_response();
     }
 
     ZSet *zset = (ZSet *)fetched_node->value;
@@ -1810,13 +1896,14 @@ char *zscore_cmd(Command *cmd)
     HashNode *ret_node = zset_search_by_key(zset, element_key);
     if (!ret_node)
     {
-        return error_response("Element not in zset");
+        fprintf(stderr, "Element not in zset\n");
+        return null_response();
     }
 
     // check if the value is a float
     if (ret_node->valueType != FLOAT)
     {
-        fprintf(stderr, "Value in zset is somehow not a float\n");
+        fprintf(stderr, "Value in zset is somehow not a float, catastrophic error\n");
         exit(EXIT_FAILURE);
     }
 
@@ -2072,7 +2159,7 @@ char *execute_command(Command *cmd, bool aof_restore)
     }
     else if (strcmp(cmd->name, "PING") == 0)
     {
-        return_response = get_response(STRING, "PONG");
+        return_response = ping_command();
     }
     else if (strcmp(cmd->name, "EXISTS") == 0)
     {
