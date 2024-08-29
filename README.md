@@ -175,7 +175,7 @@ liteDB supports a variety of commands across different data structures:
 
 -   ZREM: (key, name) - Removes the element from the sorted set with the specified name. The sorted set is specified by key. Returns the number of elements removed.
 
--   ZSCORE: (key, name) - Returns the score of the element with the specified name from the sorted set specified by key.
+-   ZSCORE: (key, name) - Returns the score of the element with the specified name from the sorted set specified by key. Returns a float . Returns a null response if the element does not exist.
 
 -   ZQUERY: (key score name offset limit) -
     General query command meant to combine various typical Redis sorted cmds into one.

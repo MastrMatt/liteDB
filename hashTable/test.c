@@ -18,8 +18,8 @@ int main()
         return 1;
     }
 
-    node->key = calloc(sizeof(char), 5);
-    node->value = calloc(sizeof(char), 6);
+    node->key = calloc(sizeof(char), strlen("key1") + 1);
+    node->value = calloc(sizeof(char), strlen("value1") + 1);
 
     if (node->key == NULL || node->value == NULL)
     {
@@ -54,7 +54,7 @@ int main()
         return 1;
     }
 
-    node2->key = calloc(sizeof(char), 5);
+    node2->key = calloc(sizeof(char), strlen("key20") + 1);
 
     if (node2->key == NULL)
     {
@@ -62,7 +62,7 @@ int main()
         return 1;
     }
 
-    node2->value = calloc(sizeof(char), 7);
+    node2->value = calloc(sizeof(char), strlen("value2") + 1);
 
     strcpy(node2->key, "key20");
     strcpy(node2->value, "value2");
@@ -91,8 +91,8 @@ int main()
         return 1;
     }
 
-    node3->key = calloc(sizeof(char), 5);
-    node3->value = calloc(sizeof(char), 7);
+    node3->key = calloc(sizeof(char), strlen("key2@") + 1);
+    node3->value = calloc(sizeof(char), strlen("value3") + 1);
 
     if (node3->key == NULL || node3->value == NULL)
     {
@@ -109,7 +109,11 @@ int main()
     hinsert(table, node3);
 
     // test remove
-    hremove(table, "key20");
+    HashNode *removedNode = hremove(table, "key20");
+    if (removedNode)
+    {
+        hfree(removedNode);
+    }
 
     result = hget(table, "key20");
     if (result != NULL)
@@ -126,7 +130,7 @@ int main()
         return 1;
     }
 
-    node2->key = calloc(sizeof(char), 5);
+    node2->key = calloc(sizeof(char), strlen("key20") + 1);
 
     if (node2->key == NULL)
     {
@@ -155,6 +159,9 @@ int main()
         fprintf(stderr, "Test 4 (Resizing hashtable) failed\n");
         return 1;
     }
+
+    // free
+    hfree_table(table);
 
     printf("All tests passed\n");
 

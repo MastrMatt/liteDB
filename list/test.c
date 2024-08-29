@@ -31,7 +31,17 @@ int main()
     }
 
     // test list_lremove
-    list_lremove(list);
+    ListNode *removedNode1 = list_lremove(list);
+    if (!removedNode1 || strcmp((char *)removedNode1->data, test_strings[0]) != 0)
+    {
+        printf("Test 2 failed\n");
+    }
+
+    if (removedNode1)
+    {
+        list_free_node(removedNode1);
+    }
+
     ListNode *test5 = list_iget(list, 0);
     if (strcmp((char *)test5->data, test_strings[1]) != 0)
     {
@@ -39,7 +49,16 @@ int main()
     }
 
     // test list_rremove
-    list_rremove(list);
+    ListNode *removedNode2 = list_rremove(list);
+    if (!removedNode2 || strcmp((char *)removedNode2->data, test_strings[3]) != 0)
+    {
+        printf("Test 3 failed\n");
+    }
+    if (removedNode2)
+    {
+        list_free_node(removedNode2);
+    }
+
     ListNode *test6 = list_iget(list, list->size - 1);
     if (strcmp((char *)test6->data, test_strings[2]) != 0)
     {
@@ -85,6 +104,14 @@ int main()
         printf("Test 7 failed\n");
         exit(EXIT_FAILURE);
     }
+
+    // free the list contents
+    list_free_contents(list);
+    list_free_contents(list2);
+
+    // free the list
+    free(list);
+    free(list2);
 
     printf("All tests passed\n");
 }

@@ -1,5 +1,7 @@
 // * This file contains the implementation of the doubly linked list. The list is a collection of nodes, each node contains a data field and two pointers to the next and previous nodes. The list can be used to store data of different types, the type of the data is specified by the NodeType enum. Will use a doubly linked list to allow for bidirectional traversal: O(1) insertion and deletion at both ends of the list and at the cost of memory. The list supports insertion, removal, modification, retrieval, and trimming of nodes.
 
+//! When a node is removed using list_lremove or list_rremove, still need to free the node using l_free_node.
+
 #include "list.h"
 
 #define EPSILON 1e-9f
@@ -215,18 +217,30 @@ int list_rinsert(List *list, void *data, ListType listType)
 }
 
 /**
+ * @brief Free a list node
+ *
+ * @param node List node to free
+ *
+ */
+void list_free_node(ListNode *node)
+{
+    free(node->data);
+    free(node);
+}
+
+/**
  * @brief Remove from head
  *
  * @param list The list to remove from
  *
- * @return int 0 if successful, -1 if failed
+ * @return ListNode* The removed node
  */
-int list_lremove(List *list)
+ListNode *list_lremove(List *list)
 {
     if (list->size == 0)
     {
         fprintf(stderr, "List is empty\n");
-        return -1;
+        return NULL;
     }
 
     ListNode *removed_node = list->head;
@@ -245,16 +259,9 @@ int list_lremove(List *list)
         list->tail = NULL;
     }
 
-    // free alloced memory
-    if (removed_node)
-    {
-        free(removed_node->data);
-        free(removed_node);
-    }
-
     list->size--;
 
-    return 0;
+    return removed_node;
 }
 
 /**
@@ -264,12 +271,12 @@ int list_lremove(List *list)
  *
  * @return int 0 if successful, -1 if failed
  */
-int list_rremove(List *list)
+ListNode *list_rremove(List *list)
 {
     if (list->size == 0)
     {
         fprintf(stderr, "List is empty\n");
-        return -1;
+        return NULL;
     }
 
     ListNode *removed_node = list->tail;
@@ -287,16 +294,9 @@ int list_rremove(List *list)
         list->tail = NULL;
     }
 
-    // Free the data and the node itself
-    if (removed_node)
-    {
-        free(removed_node->data);
-        free(removed_node);
-    }
-
     list->size--;
 
-    return 0;
+    return removed_node;
 }
 
 /**
@@ -396,13 +396,27 @@ int list_trim(List *list, int start, int end)
     // free the nodes that are trimmed from the start
     for (int i = 0; i < start; i++)
     {
-        list_lremove(list);
+        ListNode *removedNode = list_lremove(list);
+        if (!removedNode)
+        {
+            fprintf(stderr, "Failed to remove some node from trim\n");
+            return -1;
+        }
+
+        list_free_node(removedNode);
     }
 
     // free the nodes that are trimmed from the end
     for (int i = initial_size - 1; i > end; i--)
     {
-        list_rremove(list);
+        ListNode *removedNode = list_rremove(list);
+        if (!removedNode)
+        {
+            fprintf(stderr, "Failed to remove some node from trim\n");
+            return -1;
+        }
+
+        list_free_node(removedNode);
     }
 
     return 0;

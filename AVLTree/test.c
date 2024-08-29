@@ -137,9 +137,16 @@ int main()
         exit(EXIT_FAILURE);
     }
 
+    // free strings
+    for (int i = 0; i < 10; i++)
+    {
+        free(strings[i]);
+    }
+
+    // free the trees
+    avl_free(tree);
+    avl_free(new_tree);
+
     // passed all tests
     printf("All tests passed\n");
-
-    // test free
-    avl_free(tree);
 }

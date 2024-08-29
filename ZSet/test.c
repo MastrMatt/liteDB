@@ -37,6 +37,10 @@ int main()
         exit(EXIT_FAILURE);
     }
 
+    // free
+    zset_free_contents(zset);
+    free(zset);
+
     // All tests passed
     printf("All tests passed\n");
 }

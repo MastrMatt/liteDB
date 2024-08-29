@@ -158,7 +158,7 @@ char *empty_array_response()
  *  See README for more information on protocol
  *
  * @param type type of the value
- * @param value value to send to the client
+ * @param value value to send to the client, will NOT be freed after memcpy to the response
  *
  * @return char* response
  */
@@ -204,6 +204,21 @@ char *get_response(ValueType type, void *value)
     // write the value
     memcpy(response + 1 + 4, value, value_len);
 
+    return response;
+}
+
+/**
+ * @Brief Generates a value response according to the liteDB protocol
+ *
+ * @param type type of the value
+ * @param value value to send to the client, will be freed after memcpy to the response so ensure it is a copy
+ *
+ * This function is like the get_response function, however, if frees the value after writing it to the response.
+ */
+char *del_response(ValueType type, void *value)
+{
+    char *response = get_response(type, value);
+    free(value);
     return response;
 }
 
@@ -1183,7 +1198,7 @@ char *rpush_command(Command *cmd, bool aof_restore)
 /**
  * @brief Executes an LPOP command and optionally logs the action to the AOF file.
  *
- * The LPOP command removes a value from the head of a list. Returns an integer response indicating the number of elements removed.
+ * The LPOP command removes a value from the head of a list. Returns the value removed.
  *
  * @param cmd Command structure specifying the (key)
  * @param aof_restore Flag indicating whether to log the LPOP operation to the AOF file.
@@ -1192,8 +1207,7 @@ char *rpush_command(Command *cmd, bool aof_restore)
  */
 char *lpop_command(Command *cmd, bool aof_restore)
 {
-    ValueType response_type = INTEGER;
-    int elem_removed;
+    ValueType response_type = STRING;
 
     if (cmd->num_args < 1)
     {
@@ -1218,29 +1232,45 @@ char *lpop_command(Command *cmd, bool aof_restore)
     List *list = (List *)fetched_node->value;
 
     // remove the value from the list
-    int ret = list_lremove(list);
-    if (ret)
+    ListNode *removedNode = list_lremove(list);
+    if (!removedNode)
     {
         return error_response("Failed to remove value from list");
     }
 
-    elem_removed++;
+    // ensure that only strings are stored in the list, if not, error occcued somehwere in db, serious error
+    if (removedNode->listType != LIST_TYPE_STRING)
+    {
+        fprintf(stderr, "Value in list is somehow not a string\n");
+        exit(EXIT_FAILURE);
+    }
+
+    char *response;
 
     if (!aof_restore)
     {
         handle_aof_write(cmd);
-        return get_response(response_type, &elem_removed);
+
+        // strdup the value to avoid double free
+        char *value = strdup(removedNode->data);
+
+        // produce the response
+        response = del_response(response_type, value);
     }
     else
     {
-        return NULL;
+        response = NULL;
     }
+
+    // free the removed node
+    list_free_node(removedNode);
+    return response;
 }
 
 /**
  * @brief Executes an RPOP command and optionally logs the action to the AOF file.
  *
- * The RPOP command removes a value from the tail of a list. Returns an integer response indicating the number of elements removed.
+ * The RPOP command removes a value from the tail of a list. Returns the value removed.
  *
  * @param cmd Command structure specifying the (key)
  * @param aof_restore Flag indicating whether to log the RPOP operation to the AOF file.
@@ -1250,8 +1280,7 @@ char *lpop_command(Command *cmd, bool aof_restore)
 char *rpop_command(Command *cmd, bool aof_restore)
 {
 
-    ValueType response_type = INTEGER;
-    int elem_removed = 0;
+    ValueType response_type = STRING;
 
     if (cmd->num_args < 1)
     {
@@ -1276,23 +1305,40 @@ char *rpop_command(Command *cmd, bool aof_restore)
     List *list = (List *)fetched_node->value;
 
     // remove the value from the list
-    int ret = list_rremove(list);
-    if (ret)
+    ListNode *removedNode = list_rremove(list);
+    if (!removedNode)
     {
         return error_response("Failed to remove value from list");
     }
 
-    elem_removed++;
+    // ensure that only strings are stored in the list, if not, error occcued somehwere in db, serious error
+    if (removedNode->listType != LIST_TYPE_STRING)
+    {
+        fprintf(stderr, "Value in list is somehow not a string\n");
+        exit(EXIT_FAILURE);
+    }
+
+    char *response;
 
     if (!aof_restore)
     {
         handle_aof_write(cmd);
-        return get_response(response_type, &elem_removed);
+
+        // strdup the value to avoid double free
+        char *value = strdup(removedNode->data);
+
+        // produce the response
+        response = del_response(response_type, value);
     }
     else
     {
-        return NULL;
+        // dont want to waste computation time on creating a response on AOF restore
+        response = NULL;
     }
+
+    // free the removed node
+    list_free_node(removedNode);
+    return response;
 }
 
 /**
@@ -1796,7 +1842,7 @@ char *zadd_command(Command *cmd, bool aof_restore)
 /**
  * @brief Executes a ZREM command and optionally logs the action to the AOF file.
  *
- * The ZREM command removes a value from a sorted set. Returns an integer response indicating the number of elements removed.
+ * ZREM: (key, name) - Removes the element from the sorted set with the specified name. The sorted set is specified by key. Returns the number of elements removed.
  *
  * @param cmd Command structure specifying the (key, name)
  * @param aof_restore Flag indicating whether to log the ZREM operation to the AOF file.
@@ -1854,7 +1900,7 @@ char *zrem_command(Command *cmd, bool aof_restore)
 /**
  * @brief Executes a ZSCORE command and returns the corresponding response string according to the liteDB protocol.
  *
- * The ZSCORE command retrieves the score of a field in a sorted set. Returns a float response indicating the score of the field.
+ * ZSCORE: (key, name) - Returns the score of the element with the specified name from the sorted set specified by key. Returns a float . Returns a null response if the element does not exist.
  *
  * @param cmd Command structure specifying the  (key, name)
  *
