@@ -13,6 +13,9 @@ jobs:
         steps:
             - uses: actions/checkout@v4
 
+            - name: Install Valgrind
+              run: sudo apt-get update && sudo apt-get install -y valgrind
+
             - name: test avl tree
               run: cd AVLTree && make all
 
