@@ -95,10 +95,12 @@ char *hget_command(Command *cmd);
 char *hdel_command(Command *cmd, bool aof_restore);
 char *hgetall_command(Command *cmd);
 
+char *lexists_command(Command *cmd);
 char *lpush_command(Command *cmd, bool aof_restore);
 char *rpush_command(Command *cmd, bool aof_restore);
 char *lpop_command(Command *cmd, bool aof_restore);
 char *rpop_command(Command *cmd, bool aof_restore);
+char *lrem_command(Command *cmd, bool aof_restore);
 char *llen_cmd(Command *cmd);
 char *lrange_cmd(Command *cmd);
 char *ltrim_cmd(Command *cmd, bool aof_restore);

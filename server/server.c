@@ -1342,6 +1342,88 @@ char *rpop_command(Command *cmd, bool aof_restore)
 }
 
 /**
+ * @brief Executes an LREM command and optionally logs the action to the AOF file.
+ *
+ * LREM: (key, count, value) - Removes the first count occurrences of elements equal to value from the list specified by key. Returns an integer response indicating the number of elements removed. If count is 0, all occurrences are removed. If count is negative, elements are removed starting from the tail of the list.
+ *
+ * @param cmd Command structure specifying the (key, count, value)
+ * @param aof_restore Flag indicating whether to log the LREM operation to the AOF file.
+ */
+char *lrem_command(Command *cmd, bool aof_restore)
+{
+    errno = 0;
+
+    ValueType response_type = INTEGER;
+    int elem_removed = 0;
+
+    if (cmd->num_args < 3)
+    {
+        return error_response("lrem command requires at least 3 arguments (key, count, value)");
+    }
+
+    char *global_table_key = cmd->args[0];
+    char *count_str = cmd->args[1];
+    char *value = cmd->args[2];
+
+    int count;
+
+    // convert the count to an integer
+    // use strtol and duck typing to determine the type of the value
+    char *endptr;
+    count = (int)strtol(count_str, &endptr, 10);
+
+    // check errors
+    if (errno)
+    {
+        perror("strtol failed");
+        exit(EXIT_FAILURE);
+    }
+
+    // Check if successfully converted to an integer
+    if (!(*endptr == '\0') || (endptr == count_str))
+    {
+        return error_response("Failed to convert count to integer");
+    }
+
+    // fetch the list from the global table
+    HashNode *fetched_node = hget(global_table, global_table_key);
+    if (!fetched_node)
+    {
+        return error_response("key not in database");
+    }
+
+    // check if the value is a list
+    if (fetched_node->valueType != LIST)
+    {
+        return error_response("key is not for a list");
+    }
+
+    List *list = (List *)fetched_node->value;
+
+    // remove the value from the list (All values in list are strings)
+    if (count < 0)
+    {
+        // if count is negative, remove from the tail, flip the sign to count is positive again
+        count = -count;
+        elem_removed = list_removeFromTail(list, value, LIST_TYPE_STRING, count);
+    }
+    else
+    {
+        elem_removed = list_removeFromHead(list, value, LIST_TYPE_STRING, count);
+    }
+
+    if (!aof_restore)
+    {
+        handle_aof_write(cmd);
+        return get_response(response_type, &elem_removed);
+    }
+    else
+    {
+        return NULL;
+    }
+}
+
+/**
  * @brief Executes an LLEN command and returns the corresponding response string according to the liteDB protocol.
  *
  * The LLEN command returns the length of a list. Returns an integer response indicating the number of elements in the list.
@@ -2283,6 +2365,11 @@ char *execute_command(Command *cmd, bool aof_restore)
     {
 
         return_response = rpop_command(cmd, aof_restore);
+    }
+    else if (strcmp(cmd->name, "LREM") == 0)
+    {
+
+        return_response = lrem_command(cmd, aof_restore);
     }
     else if (strcmp(cmd->name, "LLEN") == 0)
     {

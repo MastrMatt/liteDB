@@ -105,13 +105,51 @@ int main()
         exit(EXIT_FAILURE);
     }
 
+    // create new list to test list_removeFromHead
+    List *list3 = list_init();
+    list_linsert(list3, test_strings[0], LIST_TYPE_STRING);
+    list_linsert(list3, test_strings[2], LIST_TYPE_STRING);
+    list_linsert(list3, test_strings[2], LIST_TYPE_STRING);
+    list_linsert(list3, test_strings[3], LIST_TYPE_STRING);
+    list_linsert(list3, test_strings[3], LIST_TYPE_STRING);
+    list_linsert(list3, test_strings[3], LIST_TYPE_STRING);
+
+    // remove 2 instances of test_strings[0]
+    list_removeFromHead(list3, test_strings[0], LIST_TYPE_STRING, 0);
+
+    if (list_contains(list3, test_strings[0], LIST_TYPE_STRING))
+    {
+        printf("Test 8 failed\n");
+        exit(EXIT_FAILURE);
+    }
+
+    // remove 3 instances of test_strings[3]
+    list_removeFromTail(list3, test_strings[3], LIST_TYPE_STRING, 3);
+
+    if (list_contains(list3, test_strings[3], LIST_TYPE_STRING))
+    {
+        printf("Test 9 failed\n");
+        exit(EXIT_FAILURE);
+    }
+
+    // remove 1 instance of test_strings[0]
+    list_removeFromTail(list3, test_strings[0], LIST_TYPE_STRING, 1);
+
+    if (list_contains(list3, test_strings[0], LIST_TYPE_STRING))
+    {
+        printf("Test 10 failed\n");
+        exit(EXIT_FAILURE);
+    }
+
     // free the list contents
     list_free_contents(list);
     list_free_contents(list2);
+    list_free_contents(list3);
 
     // free the list
     free(list);
     free(list2);
+    free(list3);
 
     printf("All tests passed\n");
 }

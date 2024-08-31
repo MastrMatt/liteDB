@@ -22,9 +22,50 @@ List *list_init()
     return new_list;
 }
 
+/**
+ * @brief Compare two floating point numbers using epsilon method
+ *
+ * @param a The first number
+ * @param b The second number
+ */
 bool compare_float(float a, float b)
 {
     return fabs(a - b) < EPSILON;
+}
+
+/**
+ * @brief Compare two list nodes
+ *
+ * @param node1 The first node
+ * @param node2 The second node
+ *
+ * @return bool true if the nodes are equal, false otherwise
+ */
+bool compare_list_node(ListNode *node1, ListNode *node2)
+{
+    if (node1->listType != node2->listType)
+    {
+        return false;
+    }
+
+    if (node1->listType == LIST_TYPE_INT)
+    {
+        return *(int *)node1->data == *(int *)node2->data;
+    }
+    else if (node1->listType == LIST_TYPE_FLOAT)
+    {
+        return compare_float(*(float *)node1->data, *(float *)node2->data);
+    }
+    else if (node1->listType == LIST_TYPE_STRING)
+    {
+        return strcmp((char *)node1->data, (char *)node2->data) == 0;
+    }
+    else
+    {
+        // should never reach here, list only supports int, float, and string
+        fprintf(stderr, "Invalid type, list should only contain int,float,string\n");
+        exit(EXIT_FAILURE);
+    }
 }
 
 /**
@@ -36,30 +77,14 @@ bool compare_float(float a, float b)
  */
 bool list_contains(List *list, void *data, ListType listType)
 {
+    ListNode input_node = {data, listType, NULL, NULL};
     ListNode *current = list->head;
 
     while (current)
     {
-        if (listType == LIST_TYPE_INT)
+        if (compare_list_node(current, &input_node))
         {
-            if (*(int *)current->data == *(int *)data)
-            {
-                return true;
-            }
-        }
-        else if (listType == LIST_TYPE_FLOAT)
-        {
-            if (compare_float(*(float *)current->data, *(float *)data))
-            {
-                return true;
-            }
-        }
-        else if (listType == LIST_TYPE_STRING)
-        {
-            if (strcmp((char *)current->data, (char *)data) == 0)
-            {
-                return true;
-            }
+            return true;
         }
 
         current = current->next;
@@ -297,6 +322,130 @@ ListNode *list_rremove(List *list)
     list->size--;
 
     return removed_node;
+}
+
+/**
+ * @brief Remove up to a given "count" of nodes with the given data starting from the head of the list. If count = 0, all nodes with the given data will be removed.
+
+* @param list The list to remove from
+* @param data The data to remove
+* @param listType The type of the data
+* @param count The number of nodes to remove
+*
+* @return int The number of nodes removed
+*/
+int list_removeFromHead(List *list, void *data, ListType listType, int count)
+{
+    int removed_count = 0;
+    int amountToRemove = count == 0 ? list->size : count;
+
+    if (amountToRemove < 0)
+    {
+        fprintf(stderr, "Cannot remove negative count from list\n");
+        exit(EXIT_FAILURE);
+    }
+
+    ListNode input_node = {data, listType, NULL, NULL};
+    ListNode *traverse = list->head;
+
+    while (traverse && removed_count < amountToRemove)
+    {
+        ListNode *temp = traverse->next;
+
+        if (compare_list_node(traverse, &input_node))
+        {
+            // update the links
+            if (traverse->prev)
+            {
+                traverse->prev->next = traverse->next;
+            }
+            else
+            {
+                list->head = traverse->next;
+            }
+
+            if (traverse->next)
+            {
+                traverse->next->prev = traverse->prev;
+            }
+            else
+            {
+                list->tail = traverse->prev;
+            }
+
+            // free the node
+            list_free_node(traverse);
+            removed_count++;
+            list->size--;
+        }
+
+        // move to the next node
+        traverse = temp;
+    }
+
+    return removed_count;
+}
+
+/**
+ * @brief Remove up to a given "count" of nodes with the given data starting from the tail of the list. If count = 0, all nodes with the given data will be removed.
+ *
+ * @param list The list to remove from
+ * @param data The data to remove
+ * @param listType The type of the data
+ * @param count The number of nodes to remove
+ *
+ * @return int The number of nodes removed
+ */
+int list_removeFromTail(List *list, void *data, ListType listType, int count)
+{
+    int removed_count = 0;
+    int amountToRemove = count == 0 ? list->size : count;
+
+    if (amountToRemove < 0)
+    {
+        fprintf(stderr, "Cannot remove negative count from list\n");
+        exit(EXIT_FAILURE);
+    }
+
+    ListNode input_node = {data, listType, NULL, NULL};
+    ListNode *traverse = list->tail;
+
+    while (traverse && removed_count < amountToRemove)
+    {
+        ListNode *temp = traverse->prev;
+
+        if (compare_list_node(traverse, &input_node))
+        {
+            // update the links
+            if (traverse->prev)
+            {
+                traverse->prev->next = traverse->next;
+            }
+            else
+            {
+                list->head = traverse->next;
+            }
+
+            if (traverse->next)
+            {
+                traverse->next->prev = traverse->prev;
+            }
+            else
+            {
+                list->tail = traverse->prev;
+            }
+
+            // free the node
+            list_free_node(traverse);
+            removed_count++;
+            list->size--;
+        }
+
+        // move to the next node
+        traverse = temp;
+    }
+
+    return removed_count;
 }
 
 /**
