@@ -54,6 +54,8 @@ class TestClientIntegration(unittest.TestCase):
         # Send a simple set cmd to the server
         self.client_process.stdin.write("SET key1 value1\n")
         self.client_process.stdin.flush()
+        
+        # Need to run some more tests here
 
         # give the server time to process the command
         time.sleep(0.1)
