@@ -62,20 +62,20 @@ Basic example of the client
 ```bash
 ./runclient
 Connecting to server at: (127.0.0.1:9255)
-liteDB> set g 4
+liteDB> SET g 4
 (nil)
-liteDB> get g
+liteDB> GET g
 (str) 4
-liteDB> hset hash field value
+liteDB> HSET hash field value
 (int) 1
-liteDB> keys
+liteDB> KEYS
 (arr) len = 2
 (str) g
 (str) hash
 (arr) end
-liteDB> del g
+liteDB> DEL g
 (int) 1
-liteDB> waiting for command ...
+liteDB> 
 
 ```
 
