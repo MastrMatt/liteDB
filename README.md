@@ -83,7 +83,7 @@ liteDB>
 
 -   **In-Memory Storage**: Offers rapid access to data with the option for persistence through AOF.
 -   **Custom Data Structures**: Implements its own versions of hash tables and AVL trees for flexibility
--   **Single-threaded Event Loop**: Similar to Redis, LiteDB operates a single-threaded event loop with IO multiplexing for handling requests, minimizing thread creation overhead and improving performance
+-   **Single-threaded Event Loop**: LiteDB operates a single-threaded event loop with IO multiplexing for handling requests, minimizing thread creation overhead and improving performance.
 -   **Multithreading for Persistence**: Utilizes multithreading to flush the AOF buffer to disk, guaranteeing data durability without impacting main thread performance.
 -   **Command Pipelining**: Supports pipelined commands from clients for batch processing and efficiency.
 -   **TCP Server Architecture**: Operates as a TCP server
