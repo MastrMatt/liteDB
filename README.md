@@ -1,4 +1,4 @@
-# liteDB: A Lightweight In-Memory Database Inspired by Redis
+# liteDB: A Lightweight In-Memory Database
 
 liteDB is a lightweight, in-memory database inspired by Redis. It combines caching with the capabilities of a full-fledged database, featuring Append Only File (AOF) persistence for data durability.
 
@@ -63,20 +63,20 @@ Basic example of the client
 ```bash
 ./runclient
 Connecting to server at: (127.0.0.1:9255)
-liteDB> set g 4
+liteDB> SET g 4
 (nil)
-liteDB> get g
+liteDB> GET g
 (str) 4
-liteDB> hset hash field value
+liteDB> HSET hash field value
 (int) 1
-liteDB> keys
+liteDB> KEYS
 (arr) len = 2
 (str) g
 (str) hash
 (arr) end
-liteDB> del g
+liteDB> DEL g
 (int) 1
-liteDB> waiting for command ...
+liteDB> 
 
 ```
 
@@ -84,7 +84,7 @@ liteDB> waiting for command ...
 
 -   **In-Memory Storage**: Offers rapid access to data with the option for persistence through AOF.
 -   **Custom Data Structures**: Implements its own versions of hash tables and AVL trees for flexibility
--   **Single-threaded Event Loop**: Similar to Redis, LiteDB operates a single-threaded event loop with IO multiplexing for handling requests, minimizing thread creation overhead and improving performance
+-   **Single-threaded Event Loop**: LiteDB operates a single-threaded event loop with IO multiplexing for handling requests, minimizing thread creation overhead and improving performance.
 -   **Multithreading for Persistence**: Utilizes multithreading to flush the AOF buffer to disk, guaranteeing data durability without impacting main thread performance.
 -   **Command Pipelining**: Supports pipelined commands from clients for batch processing and efficiency.
 -   **TCP Server Architecture**: Operates as a TCP server
