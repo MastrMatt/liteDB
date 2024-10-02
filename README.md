@@ -21,6 +21,7 @@ and a cli client:
 docker run --init --network=host -it mastrmatt/litedb-cli:latest
 
 ```
+Note: If wanting to ensure persistence with docker, use a docker volume to persist file: app/AOF.aof
 
 Else, To begin using liteDB, follow these simple steps:
 
